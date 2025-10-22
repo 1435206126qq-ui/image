@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码编辑器与HTML文件生成器</title>
+    <style>
+        /* 原有样式保持不变 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .editor-container {
+            padding: 30px;
+        }
+        
+        .code-editor {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .editor-header {
+            background-color: #f5f5f5;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .editor-title {
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .editor-btn {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .editor-btn:hover {
+            background-color: #e9e9e9;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            background-color: #f9f9f9;
+            border-radius: 0 0 6px 6px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #1c6ea4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #27ae60, #219653);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-clear {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            min-width: 120px;
+            flex: 0.5;
+        }
+        
+        .btn-clear:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .footer {
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
+            color: #666;
+        }
+        
+        @media (max-width: 600px) {
+            .control-panel {
+                flex-direction: column;
+            }
+            
+            .btn {
+                min-width: 100%;
+            }
+            
+            .btn-clear {
+                min-width: 100%;
+                flex: 1;
+            }
+            
+            .editor-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>代码编辑器与HTML文件生成器</h1>
+            <p class="subtitle">编写、测试并下载您的HTML文件</p>
+        </header>
+        
+        <div class="editor-container">
+            <div class="code-editor">
+                <div class="editor-header">
+                    <span class="editor-title">HTML 代码</span>
+                    <div class="editor-actions">
+                        <button id="paste-btn" class="editor-btn">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M10.5 1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V4.5L10.5 1zM3 0h8l4 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
+                                <path d="M8 4a.5.5 0 0 1 .5.5V6H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V7H6a.5.5 0 0 1 0-1h1.5V4.5A.5.5 0 0 1 8 4z"/>
+                            </svg>
+                            粘贴
+                        </button>
+                    </div>
+                </div>
+                <textarea id="html-code" placeholder="在此粘贴您的HTML代码..."></textarea>
+            </div>
+            
+            <div class="control-panel">
+                <button id="run-btn" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                    </svg>
+                    运行代码
+                </button>
+                <button id="download-btn" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                    </svg>
+                    下载HTML文件
+                </button>
+                <button id="clear-btn" class="btn btn-clear">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                    清空代码
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>代码编辑器与HTML文件生成器 &copy; 2023</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const htmlCode = document.getElementById('html-code');
+            const runBtn = document.getElementById('run-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const pasteBtn = document.getElementById('paste-btn');
+            
+            // 运行代码按钮事件
+            runBtn.addEventListener('click', function() {
+                const htmlContent = htmlCode.value;
+                if (!htmlContent.trim()) {
+                    alert('请输入HTML代码！');
+                    return;
+                }
+                
+                // 在新标签页中打开代码
+                const newWindow = window.open();
+                newWindow.document.write(htmlContent);
+                newWindow.document.close();
+            });
+            
+            // 下载HTML文件
+            downloadBtn.addEventListener('click', function() {
+                const htmlContent = htmlCode.value;
+                if (!htmlContent.trim()) {
+                    alert('请输入HTML代码！');
+                    return;
+                }
+                
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'generated-page.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // 清空代码按钮事件
+            clearBtn.addEventListener('click', function() {
+                htmlCode.value = '';
+                htmlCode.focus();
+            });
+            
+            // 粘贴按钮事件 - 使用传统方法
+            pasteBtn.addEventListener('click', function() {
+                // 先聚焦到文本区域
+                htmlCode.focus();
+                
+                try {
+                    // 尝试使用传统execCommand方法
+                    if (document.execCommand('paste')) {
+                        return;
+                    }
+                } catch (e) {
+                    // execCommand失败，尝试使用现代Clipboard API
+                }
+                
+                // 如果传统方法不可用，使用现代Clipboard API
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText()
+                        .then(text => {
+                            // 在光标位置插入文本
+                            const cursorPosition = htmlCode.selectionStart;
+                            const textBefore = htmlCode.value.substring(0, cursorPosition);
+                            const textAfter = htmlCode.value.substring(cursorPosition);
+                            
+                            htmlCode.value = textBefore + text + textAfter;
+                            
+                            // 设置光标位置
+                            htmlCode.selectionStart = cursorPosition + text.length;
+                            htmlCode.selectionEnd = cursorPosition + text.length;
+                        })
+                        .catch(err => {
+                            console.error('粘贴失败:', err);
+                            showPasteInstructions();
+                        });
+                } else {
+                    // 浏览器不支持剪贴板API
+                    showPasteInstructions();
+                }
+            });
+            
+            // 显示粘贴说明
+            function showPasteInstructions() {
+                alert('您的浏览器不支持一键粘贴功能。\n\n请使用以下方法：\n1. 点击文本框\n2. 使用键盘快捷键 Ctrl+V (Windows) 或 Cmd+V (Mac)');
+            }
+            
+            // 添加键盘快捷键支持
+            htmlCode.addEventListener('keydown', function(e) {
+                // 监听Ctrl+V或Cmd+V
+                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                    // 让浏览器处理默认粘贴行为
+                    setTimeout(() => {
+                        // 粘贴完成后可以在这里添加额外处理
+                    }, 0);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

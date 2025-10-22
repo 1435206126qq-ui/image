@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文字图片生成工具</title>
+<style>
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Microsoft YaHei', sans-serif;
+}
+body { 
+    background: #f5f7fa; 
+    padding: 20px; 
+    display: flex; 
+    justify-content: center;
+}
+.container { 
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    gap: 20px;
+}
+.left-panel, .right-panel {
+    background: #fff; 
+    padding: 25px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.left-panel {
+    flex: 1.2;
+}
+.right-panel {
+    flex: 0.8;
+}
+h2 { 
+    font-size: 18px; 
+    color: #3498db; 
+    margin-bottom: 15px;
+    text-align: center;
+}
+.file-input-label { 
+    display: block; 
+    width: 100%; 
+    padding: 15px; 
+    font-size: 14px; 
+    border: 2px dashed #3498db; 
+    border-radius: 8px; 
+    background: #eaf2fb; 
+    color: #2c3e50; 
+    cursor: pointer; 
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.file-input-label:hover { 
+    background: #d6e7fc; 
+    border-color: #2980b9;
+}
+#fileInput { 
+    display: none;
+}
+.selected-files { 
+    margin-top: 10px; 
+    font-size: 13px; 
+    color: #7f8c8d; 
+    text-align: center;
+}
+.control-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+.control-section h3 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 12px;
+}
+button { 
+    width: 100%;
+    margin-top: 10px; 
+    padding: 12px 15px; 
+    font-size: 14px; 
+    border: none; 
+    border-radius: 6px; 
+    background: #3498db; 
+    color: #fff; 
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+button:hover { 
+    background: #2980b9;
+}
+#downloadPathBtn { 
+    background: #27ae60;
+}
+#downloadPathBtn:hover { 
+    background: #219955;
+}
+#generateBtn {
+    background: #e74c3c;
+}
+#generateBtn:hover {
+    background: #c0392b;
+}
+#selectedPath { 
+    margin-top: 8px; 
+    font-size: 12px; 
+    color: #7f8c8d; 
+    text-align: center;
+}
+.status { 
+    margin-top: 15px; 
+    font-size: 13px; 
+    color: #e74c3c; 
+    text-align: center;
+    min-height: 20px;
+}
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #ecf0f1;
+    border-radius: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+    display: none;
+}
+.progress {
+    height: 100%;
+    background: #2ecc71;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+.text-editor {
+    margin-top: 20px;
+}
+.text-list {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #e1e8ed;
+    border-radius: 6px;
+    padding: 10px;
+    background: #fafbfc;
+}
+.text-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e1e8ed;
+    position: relative;
+}
+.text-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.text-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #7f8c8d;
+}
+.text-item-content-wrapper {
+    position: relative;
+    width: 100%;
+}
+.text-item-content {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid #d1d9e0;
+    border-radius: 4px;
+    resize: vertical;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+.text-item-content:focus {
+    outline: none;
+    border-color: #3498db;
+}
+.line-guide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    padding: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    color: transparent;
+    overflow: hidden;
+}
+.guide-char {
+    color: #ff6b6b;
+    background: #fff3f3;
+    border-radius: 2px;
+}
+.guide-hint {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #e74c3c;
+    text-align: center;
+    background: #fff3f3;
+    padding: 3px;
+    border-radius: 3px;
+}
+.file-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 8px;
+    font-weight: bold;
+}
+.badge-image {
+    background: #3498db;
+    color: white;
+}
+.badge-text {
+    background: #27ae60;
+    color: white;
+}
+
+/* 次级文本框样式 */
+.add-subitem-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+.add-subitem-btn:hover {
+    background: #2980b9;
+}
+.sub-items-container {
+    margin-left: 20px;
+    margin-top: 10px;
+    border-left: 2px solid #e1e8ed;
+    padding-left: 15px;
+    position: relative;
+}
+.sub-item {
+    margin-bottom: 10px;
+    position: relative;
+}
+.sub-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #7f8c8d;
+}
+.sub-item-content-wrapper {
+    position: relative;
+    width: 100%;
+}
+.sub-item-content {
+    width: 100%;
+    min-height: 40px;
+    padding: 6px;
+    border: 1px solid #d1d9e0;
+    border-radius: 3px;
+    resize: vertical;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    text-align: left;
+    background: #f8f9fa;
+}
+.sub-item-content:focus {
+    outline: none;
+    border-color: #3498db;
+    background: #fff;
+}
+.sub-line-guide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    padding: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    color: transparent;
+    overflow: hidden;
+    text-align: left;
+}
+.special-name-btn {
+    position: absolute;
+    left: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    padding: 2px 4px;
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 2;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.special-name-btn:hover {
+    background: #c0392b;
+}
+.special-name-btn.active {
+    background: #27ae60;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="left-panel">
+        <h2>文字编辑区域</h2>
+        <div class="guide-hint">💡 提示：主内容每行第15个字处有红色标识，次级内容每行第26个字处有红色标识</div>
+        <div class="text-editor">
+            <div class="text-list" id="textList">
+                <div class="text-item">
+                    <div class="text-item-header">
+                        <span>文件名称</span>
+                        <span>序号</span>
+                    </div>
+                    <div class="text-item-content-wrapper">
+                        <textarea class="text-item-content" placeholder="请先选择图片或文本文件..."></textarea>
+                        <div class="line-guide"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="right-panel">
+        <h2>图片生成工具</h2>
+        
+        <label for="fileInput" class="file-input-label">📁 点击或拖拽图片或文本文件</label>
+        <input type="file" id="fileInput" multiple accept="image/*,.txt">
+        <div class="selected-files" id="selectedFiles">未选择文件</div>
+        
+        <div class="control-section">
+            <h3>下载设置</h3>
+            
+            <button id="downloadPathBtn">选择下载路径</button>
+            <div class="selected-files" id="selectedPath">未选择下载路径</div>
+        </div>
+        
+        <button id="generateBtn">生成文字图片并直接下载</button>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const fileInput = document.getElementById('fileInput');
+    const selectedFiles = document.getElementById('selectedFiles');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadPathBtn = document.getElementById('downloadPathBtn');
+    const selectedPath = document.getElementById('selectedPath');
+    const status = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const progress = document.getElementById('progress');
+    const textList = document.getElementById('textList');
+    
+    let files = [];
+    let downloadDirectoryHandle = null;
+    let textContents = [];
+    let subItemsData = {};
+    let specialNameFlags = {};
+
+    fileInput.addEventListener('change', async function(){
+        const selectedFilesList = Array.from(fileInput.files);
+        
+        const imageFiles = selectedFilesList.filter(file => file.type.startsWith('image/'));
+        const textFiles = selectedFilesList.filter(file => file.name.endsWith('.txt'));
+        
+        const textFileContents = await Promise.all(
+            textFiles.map(async (file) => {
+                try {
+                    const content = await file.text();
+                    return {
+                        fileName: file.name,
+                        content: content.trim()
+                    };
+                } catch (error) {
+                    console.error(`读取文件 ${file.name} 失败:`, error);
+                    return {
+                        fileName: file.name,
+                        content: `读取失败: ${file.name}`
+                    };
+                }
+            })
+        );
+        
+        files = [
+            ...imageFiles.map(file => ({ type: 'image', file })),
+            ...textFiles.map((file, index) => ({ 
+                type: 'text', 
+                file,
+                content: textFileContents[index].content
+            }))
+        ].sort((a, b) => a.file.name.localeCompare(b.file.name, 'zh'));
+        
+        subItemsData = {};
+        specialNameFlags = {};
+        files.forEach((_, index) => {
+            subItemsData[index] = [];
+            specialNameFlags[index] = [];
+        });
+        
+        selectedFiles.textContent = files.length ? 
+            `已选择 ${files.length} 个文件 (${imageFiles.length} 图片, ${textFiles.length} 文本)` : 
+            '未选择文件';
+        
+        updateTextEditor();
+    });
+
+    downloadPathBtn.addEventListener('click', async function(){
+        try {
+            if ('showDirectoryPicker' in window) {
+                downloadDirectoryHandle = await window.showDirectoryPicker({
+                    mode: 'readwrite'
+                });
+                
+                const pathName = downloadDirectoryHandle.name;
+                selectedPath.textContent = `已选择下载路径: ${pathName}`;
+                status.textContent = "下载路径选择成功";
+                
+                setTimeout(() => {
+                    if (status.textContent === "下载路径选择成功") {
+                        status.textContent = "";
+                    }
+                }, 3000);
+            } else {
+                status.textContent = "您的浏览器不支持直接选择下载路径功能，将使用默认下载方式";
+                downloadDirectoryHandle = null;
+            }
+        } catch (error) {
+            console.log('用户取消了文件夹选择', error);
+            if (!downloadDirectoryHandle) {
+                status.textContent = "未选择下载路径，将使用默认下载方式";
+            }
+        }
+    });
+
+    generateBtn.addEventListener('click', async function(){
+        if(files.length === 0) {
+            status.textContent = "请先选择图片或文本文件";
+            return;
+        }
+
+        if (!downloadDirectoryHandle) {
+            status.textContent = "请先选择下载路径";
+            return;
+        }
+
+        status.textContent = "正在生成图片并保存到指定路径...";
+        progressBar.style.display = 'block';
+        progress.style.width = '0%';
+        
+        let completed = 0;
+        let totalItems = files.length + Object.values(subItemsData).flat().length;
+        
+        for(let i=0; i<files.length; i++){
+            await generateMainImage(i);
+            completed++;
+            progress.style.width = `${(completed / totalItems) * 100}%`;
+        }
+        
+        for(let i=0; i<files.length; i++){
+            if (subItemsData[i] && subItemsData[i].length > 0) {
+                for(let j=0; j<subItemsData[i].length; j++){
+                    await generateSubImage(i, j);
+                    completed++;
+                    progress.style.width = `${(completed / totalItems) * 100}%`;
+                }
+            }
+        }
+        
+        progressBar.style.display = 'none';
+        status.textContent = `已完成！所有文件已保存到指定文件夹`;
+    });
+
+    async function generateMainImage(index) {
+        const item = files[index];
+        let fileName = item.file.name;
+        let fullName = fileName.replace(/\.[^/.]+$/, "");
+        let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+        let number = match ? match[1] : '';
+        let text = textContents[index] || (item.type === 'image' ? (match ? match[2] : fullName) : item.content);
+
+        const canvasWidth = 900;
+        const fontSizeNumber = 80;
+        const fontSizeText = 50;
+        const fontSizeDaily = 80;
+        const lineGap = 6;
+
+        const lines = text.split('\n');
+        const lineHeight = fontSizeText + lineGap;
+
+        let canvasHeight;
+        let paddingTop;
+        
+        if (number === '1') {
+            const emptyLineHeight = fontSizeDaily;
+            const dailyHeight = fontSizeDaily;
+            const numberHeight = fontSizeNumber;
+            const textHeight = lines.length * lineHeight - lineGap;
+            
+            canvasHeight = emptyLineHeight * 2 + dailyHeight + numberHeight + textHeight + 1;
+            paddingTop = 0;
+        } else {
+            paddingTop = 160;
+            canvasHeight = paddingTop + fontSizeNumber + lines.length * lineHeight - lineGap + 1;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,canvasWidth,canvasHeight);
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+
+        if (number === '1') {
+            let currentY = 0;
+            currentY += fontSizeDaily;
+            ctx.font = `bold ${fontSizeDaily}px Microsoft YaHei`;
+            ctx.textBaseline = 'top';
+            ctx.fillText("【每日杂图】", canvasWidth/2, currentY);
+            currentY += fontSizeDaily;
+            currentY += fontSizeDaily;
+            ctx.font = `bold ${fontSizeNumber}px Microsoft YaHei`;
+            ctx.textBaseline = 'top';
+            ctx.fillText(number, canvasWidth/2, currentY);
+            currentY += fontSizeNumber;
+            ctx.font = `${fontSizeText}px Microsoft YaHei`;
+            lines.forEach((line,index)=>{
+                if(index === lines.length - 1){
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(line, canvasWidth/2, canvasHeight - 1);
+                } else {
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(line, canvasWidth/2, currentY + index * lineHeight);
+                }
+            });
+        } else {
+            ctx.font = `bold ${fontSizeNumber}px Microsoft YaHei`;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(number, canvasWidth/2, paddingTop + fontSizeNumber/2);
+            ctx.font = `${fontSizeText}px Microsoft YaHei`;
+            lines.forEach((line,index)=>{
+                if(index === lines.length - 1){
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(line, canvasWidth/2, canvasHeight - 1);
+                } else {
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(line, canvasWidth/2, paddingTop + fontSizeNumber + index * lineHeight);
+                }
+            });
+        }
+
+        const dataURL = canvas.toDataURL('image/png');
+        let outputFileName = number ? `${number}.0.png` : `${fullName}.png`;
+        
+        if (downloadDirectoryHandle) {
+            try {
+                const fileHandle = await downloadDirectoryHandle.getFileHandle(outputFileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                const response = await fetch(dataURL);
+                const blob = await response.blob();
+                await writable.write(blob);
+                await writable.close();
+            } catch (error) {
+                console.error(`保存文件 ${outputFileName} 时出错:`, error);
+                status.textContent = `保存文件 ${outputFileName} 时出错，请检查权限`;
+            }
+        }
+    }
+
+    async function generateSubImage(mainIndex, subIndex) {
+        const mainItem = files[mainIndex];
+        let fileName = mainItem.file.name;
+        let fullName = fileName.replace(/\.[^/.]+$/, "");
+        let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+        let mainNumber = match ? match[1] : '';
+        
+        const subText = subItemsData[mainIndex][subIndex];
+        if (!subText) return;
+
+        const canvasWidth = 900;
+        const fontSizeText = 35;
+        const lineGap = 6;
+
+        const lines = subText.split('\n');
+        const lineHeight = fontSizeText + lineGap;
+
+        const paddingLeft = 10;
+        const paddingTop = 10;
+        const paddingBottom = 3;
+        const canvasHeight = paddingTop + lines.length * lineHeight + paddingBottom;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,canvasWidth,canvasHeight);
+        
+        // 设置文字透明度为80%
+        ctx.fillStyle = '#000';
+        ctx.globalAlpha = 0.5;
+
+        ctx.font = `${fontSizeText}px Microsoft YaHei`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        
+        const textStartX = paddingLeft;
+        lines.forEach((line, index) => {
+            const yPosition = paddingTop + index * lineHeight;
+            ctx.fillText(line, textStartX, yPosition);
+        });
+
+        // 恢复完全不透明
+        ctx.globalAlpha = 1.0;
+
+        const dataURL = canvas.toDataURL('image/png');
+        
+        let outputFileName;
+        if (specialNameFlags[mainIndex] && specialNameFlags[mainIndex][subIndex]) {
+            outputFileName = `${mainNumber}最最最.png`;
+        } else {
+            outputFileName = `${mainNumber}.${subIndex + 1}.png`;
+        }
+        
+        if (downloadDirectoryHandle) {
+            try {
+                const fileHandle = await downloadDirectoryHandle.getFileHandle(outputFileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                const response = await fetch(dataURL);
+                const blob = await response.blob();
+                await writable.write(blob);
+                await writable.close();
+            } catch (error) {
+                console.error(`保存文件 ${outputFileName} 时出错:`, error);
+                status.textContent = `保存文件 ${outputFileName} 时出错，请检查权限`;
+            }
+        }
+    }
+
+    function addSubItem(mainIndex) {
+        if (!subItemsData[mainIndex]) {
+            subItemsData[mainIndex] = [];
+        }
+        if (!specialNameFlags[mainIndex]) {
+            specialNameFlags[mainIndex] = [];
+        }
+        subItemsData[mainIndex].push('');
+        specialNameFlags[mainIndex].push(false);
+        updateTextEditor();
+    }
+
+    function updateSubItemContent(mainIndex, subIndex, content) {
+        if (!subItemsData[mainIndex]) {
+            subItemsData[mainIndex] = [];
+        }
+        subItemsData[mainIndex][subIndex] = content;
+    }
+
+    function toggleSpecialName(mainIndex, subIndex) {
+        if (!specialNameFlags[mainIndex]) {
+            specialNameFlags[mainIndex] = [];
+        }
+        specialNameFlags[mainIndex][subIndex] = !specialNameFlags[mainIndex][subIndex];
+        updateTextEditor();
+    }
+
+    function updateTextEditor() {
+        textList.innerHTML = '';
+        textContents = [];
+        
+        if (files.length === 0) {
+            textList.innerHTML = `
+                <div class="text-item">
+                    <div class="text-item-header">
+                        <span>文件名称</span>
+                        <span>序号</span>
+                    </div>
+                    <div class="text-item-content-wrapper">
+                        <textarea class="text-item-content" placeholder="请先选择图片或文本文件..."></textarea>
+                        <div class="line-guide"></div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        files.forEach((item, index) => {
+            let fileName = item.file.name;
+            let fullName = fileName.replace(/\.[^/.]+$/, "");
+            let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+            let number = match ? match[1] : '';
+            let defaultText = '';
+            
+            if (item.type === 'image') {
+                defaultText = match ? match[2] : fullName;
+            } else {
+                defaultText = item.content || fullName;
+            }
+            
+            textContents[index] = defaultText;
+            
+            const textItem = document.createElement('div');
+            textItem.className = 'text-item';
+            textItem.innerHTML = `
+                <div class="text-item-header">
+                    <span>
+                        ${fileName}
+                        <span class="file-type-badge ${item.type === 'image' ? 'badge-image' : 'badge-text'}">
+                            ${item.type === 'image' ? '图片' : '文本'}
+                        </span>
+                    </span>
+                    <span>${number || '无序号'}</span>
+                </div>
+                <div class="text-item-content-wrapper">
+                    <button class="add-subitem-btn" data-index="${index}">+</button>
+                    <textarea class="text-item-content" data-index="${index}">${defaultText}</textarea>
+                    <div class="line-guide"></div>
+                </div>
+            `;
+            
+            const subItemsContainer = document.createElement('div');
+            subItemsContainer.className = 'sub-items-container';
+            
+            if (subItemsData[index] && subItemsData[index].length > 0) {
+                subItemsData[index].forEach((subText, subIndex) => {
+                    const isSpecial = specialNameFlags[index] && specialNameFlags[index][subIndex];
+                    const subItem = document.createElement('div');
+                    subItem.className = 'sub-item';
+                    subItem.innerHTML = `
+                        <div class="sub-item-header">
+                            <span>次级内容 ${subIndex + 1}</span>
+                            <span>${number}.${isSpecial ? '最最最' : subIndex + 1}</span>
+                        </div>
+                        <div class="sub-item-content-wrapper">
+                            <textarea class="sub-item-content" data-main-index="${index}" data-sub-index="${subIndex}">${subText}</textarea>
+                            <div class="sub-line-guide"></div>
+                        </div>
+                        <button class="special-name-btn ${isSpecial ? 'active' : ''}" 
+                                data-main-index="${index}" 
+                                data-sub-index="${subIndex}">
+                            下
+                        </button>
+                    `;
+                    subItemsContainer.appendChild(subItem);
+                });
+            }
+            
+            textItem.appendChild(subItemsContainer);
+            textList.appendChild(textItem);
+        });
+        
+        document.querySelectorAll('.text-item-content').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                const index = parseInt(this.dataset.index);
+                textContents[index] = this.value;
+                updateLineGuide(this);
+            });
+            updateLineGuide(textarea);
+        });
+        
+        document.querySelectorAll('.sub-item-content').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                const mainIndex = parseInt(this.dataset.mainIndex);
+                const subIndex = parseInt(this.dataset.subIndex);
+                updateSubItemContent(mainIndex, subIndex, this.value);
+                updateSubLineGuide(this);
+            });
+            updateSubLineGuide(textarea);
+        });
+        
+        document.querySelectorAll('.add-subitem-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const mainIndex = parseInt(this.dataset.index);
+                addSubItem(mainIndex);
+            });
+        });
+        
+        document.querySelectorAll('.special-name-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const mainIndex = parseInt(this.dataset.mainIndex);
+                const subIndex = parseInt(this.dataset.subIndex);
+                toggleSpecialName(mainIndex, subIndex);
+            });
+        });
+    }
+
+    function updateLineGuide(textarea) {
+        const guide = textarea.nextElementSibling;
+        const text = textarea.value;
+        const lines = text.split('\n');
+        
+        let guideHTML = '';
+        
+        lines.forEach((line, lineIndex) => {
+            if (lineIndex > 0) {
+                guideHTML += '\n';
+            }
+            
+            for (let i = 0; i < line.length; i++) {
+                if (i === 14) {
+                    guideHTML += `<span class="guide-char">${line[i]}</span>`;
+                } else {
+                    guideHTML += line[i];
+                }
+            }
+            
+            if (line.length < 15) {
+                for (let i = line.length; i < 15; i++) {
+                    if (i === 14) {
+                        guideHTML += `<span class="guide-char">·</span>`;
+                    } else {
+                        guideHTML += ' ';
+                    }
+                }
+            }
+        });
+        
+        guide.innerHTML = guideHTML;
+    }
+
+    function updateSubLineGuide(textarea) {
+        const guide = textarea.nextElementSibling;
+        const text = textarea.value;
+        const lines = text.split('\n');
+        
+        let guideHTML = '';
+        
+        lines.forEach((line, lineIndex) => {
+            if (lineIndex > 0) {
+                guideHTML += '\n';
+            }
+            
+            for (let i = 0; i < line.length; i++) {
+                if (i === 25) {
+                    guideHTML += `<span class="guide-char">${line[i]}</span>`;
+                } else {
+                    guideHTML += line[i];
+                }
+            }
+            
+            if (line.length < 26) {
+                for (let i = line.length; i < 26; i++) {
+                    if (i === 25) {
+                        guideHTML += `<span class="guide-char">·</span>`;
+                    } else {
+                        guideHTML += ' ';
+                    }
+                }
+            }
+        });
+        
+        guide.innerHTML = guideHTML;
+    }
+});
+</script>
+</body>
+</html>

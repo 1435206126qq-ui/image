@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片文字添加工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            min-height: 800px;
+            height: calc(100vh - 160px);
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            max-width: 600px;
+            padding: 15px;
+            overflow-y: auto;
+            height: 100%;
+        }
+        
+        .preview {
+            flex: 0 0 400px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            height: 100%;
+        }
+        
+        .preview-content {
+            position: sticky;
+            top: 0;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        h2 {
+            color: #182848;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 6px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4b6cb7;
+            box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.2);
+        }
+        
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .color-picker input {
+            width: 40px;
+            height: 30px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .slider-container input {
+            flex: 1;
+        }
+        
+        .slider-value {
+            width: 35px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #495057;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        button {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .download-btn {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 140px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        
+        .preview-container {
+            width: 100%;
+            max-width: 400px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            cursor: move;
+            background: white;
+        }
+        
+        canvas {
+            display: block;
+            max-width: 100%;
+            background-color: #f9f9f9;
+        }
+        
+        .preview-placeholder {
+            width: 100%;
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #6c757d;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .preview-placeholder i {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #adb5bd;
+        }
+        
+        .color-settings {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .color-setting {
+            flex: 1;
+        }
+        
+        .color-setting label {
+            margin-bottom: 4px;
+        }
+        
+        .tips {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            width: 100%;
+            max-width: 400px;
+            border-left: 4px solid #4b6cb7;
+        }
+        
+        .tips ul {
+            margin-left: 16px;
+            margin-top: 6px;
+        }
+        
+        .tips li {
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+        
+        .drag-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            display: none;
+            z-index: 10;
+        }
+        
+        .mode-selector {
+            display: flex;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            border-radius: 0;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .mode-btn.active {
+            background: #4b6cb7;
+            color: white;
+        }
+        
+        .bg-gradient-preview {
+            width: 100%;
+            height: 30px;
+            border-radius: 4px;
+            margin-top: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .font-size-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .font-size-control {
+            flex: 1;
+        }
+        
+        /* 紧凑布局 - 移除不必要的间距 */
+        .control-group .control-group {
+            margin-bottom: 0;
+            padding: 10px;
+        }
+        
+        /* 紧凑的滑块标签布局 */
+        .slider-container label {
+            margin-bottom: 2px;
+        }
+        
+        /* 扩展设置并排布局 */
+        .extension-settings {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .extension-setting {
+            flex: 1;
+        }
+        
+        /* 文字对齐按钮组 */
+        .text-align-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .align-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        
+        .align-btn.active {
+            background: #4b6cb7;
+            color: white;
+            border-color: #4b6cb7;
+        }
+        
+        .align-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .align-btn.active:hover {
+            background: #3a5a9e;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+                height: auto;
+            }
+            
+            .controls, .preview {
+                max-width: 100%;
+                height: auto;
+                overflow: visible;
+            }
+            
+            .preview-content {
+                position: static;
+            }
+            
+            .color-settings {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .font-size-controls {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .extension-settings {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .text-align-group {
+                flex-direction: column;
+            }
+            
+            .download-btn {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                width: calc(100% - 40px);
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-group">
+                    <h2>图片设置</h2>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" id="uploadModeBtn">上传图片</button>
+                        <button class="mode-btn" id="generateModeBtn">生成图片</button>
+                    </div>
+                    
+                    <div id="uploadSection">
+                        <label for="imageUpload">选择图片</label>
+                        <input type="file" id="imageUpload" accept="image/*">
+                        
+                        <div class="control-group" id="canvasExtensionSection" style="display: none;">
+                            <h2>扩展画布</h2>
+                            <label for="canvasExtension">扩展画布高度</label>
+                            <div class="slider-container">
+                                <input type="range" id="canvasExtension" min="0" max="500" value="0">
+                                <span class="slider-value" id="canvasExtensionValue">0px</span>
+                            </div>
+                            
+                            <div class="extension-settings">
+                                <div class="extension-setting">
+                                    <label for="extensionPosition">扩展位置</label>
+                                    <select id="extensionPosition">
+                                        <option value="top">图片上方</option>
+                                        <option value="bottom">图片下方</option>
+                                    </select>
+                                </div>
+                                <div class="extension-setting">
+                                    <label for="bgType">背景类型</label>
+                                    <select id="bgType">
+                                        <option value="color">纯色背景</option>
+                                        <option value="gradient">渐变背景</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="bgColorSection">
+                                <label for="canvasBgColor">背景颜色</label>
+                                <div class="color-picker">
+                                    <input type="color" id="canvasBgColor" value="#ffffff">
+                                    <span id="canvasBgColorValue">#FFFFFF</span>
+                                </div>
+                            </div>
+                            
+                            <div id="bgGradientSection" style="display: none;">
+                                <label for="gradientColor1">渐变颜色 1</label>
+                                <div class="color-picker">
+                                    <input type="color" id="gradientColor1" value="#4b6cb7">
+                                    <span id="gradientColor1Value">#4B6CB7</span>
+                                </div>
+                                
+                                <label for="gradientColor2">渐变颜色 2</label>
+                                <div class="color-picker">
+                                    <input type="color" id="gradientColor2" value="#182848">
+                                    <span id="gradientColor2Value">#182848</span>
+                                </div>
+                                
+                                <div class="bg-gradient-preview" id="gradientPreview"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="generateSection" style="display: none;">
+                        <label for="canvasWidth">图片宽度</label>
+                        <div class="slider-container">
+                            <input type="range" id="canvasWidth" min="400" max="2000" value="800">
+                            <span class="slider-value" id="canvasWidthValue">800px</span>
+                        </div>
+                        
+                        <label for="canvasHeight">图片高度</label>
+                        <div class="slider-container">
+                            <input type="range" id="canvasHeight" min="300" max="1500" value="600">
+                            <span class="slider-value" id="canvasHeightValue">600px</span>
+                        </div>
+                        
+                        <label for="bgType2">背景类型</label>
+                        <select id="bgType2">
+                            <option value="color">纯色背景</option>
+                            <option value="gradient">渐变背景</option>
+                        </select>
+                        
+                        <div id="bgColorSection2">
+                            <label for="canvasBgColor2">背景颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="canvasBgColor2" value="#ffffff">
+                                <span id="canvasBgColorValue2">#FFFFFF</span>
+                            </div>
+                        </div>
+                        
+                        <div id="bgGradientSection2" style="display: none;">
+                            <label for="gradientColor12">渐变颜色 1</label>
+                            <div class="color-picker">
+                                <input type="color" id="gradientColor12" value="#4b6cb7">
+                                <span id="gradientColor1Value2">#4B6CB7</span>
+                            </div>
+                            
+                            <label for="gradientColor22">渐变颜色 2</label>
+                            <div class="color-picker">
+                                <input type="color" id="gradientColor22" value="#182848">
+                                <span id="gradientColor2Value2">#182848</span>
+                            </div>
+                            
+                            <div class="bg-gradient-preview" id="gradientPreview2"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>文字内容</h2>
+                    <label for="textInput">输入文字（支持手动换行和空行）</label>
+                    <textarea id="textInput" placeholder="在这里输入要添加到图片上的文字..."></textarea>
+                    
+                    <label for="fontFamily">字体</label>
+                    <select id="fontFamily">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Microsoft YaHei', sans-serif" selected>微软雅黑</option>
+                        <option value="'SimHei', sans-serif">黑体</option>
+                        <option value="'SimSun', serif">宋体</option>
+                        <option value="'KaiTi', serif">楷体</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                    </select>
+                    
+                    <label style="margin-top: 8px;">文字对齐</label>
+                    <div class="text-align-group">
+                        <button class="align-btn active" data-align="left">左对齐</button>
+                        <button class="align-btn" data-align="center">居中</button>
+                        <button class="align-btn" data-align="right">右对齐</button>
+                    </div>
+                    
+                    <div class="font-size-controls">
+                        <div class="font-size-control">
+                            <label for="fontSize">基础字体大小</label>
+                            <div class="slider-container">
+                                <input type="range" id="fontSize" min="12" max="72" value="24">
+                                <span class="slider-value" id="fontSizeValue">24px</span>
+                            </div>
+                        </div>
+                        <div class="font-size-control">
+                            <label for="selectedFontSize">选中文字大小</label>
+                            <div class="slider-container">
+                                <input type="range" id="selectedFontSize" min="12" max="72" value="24">
+                                <span class="slider-value" id="selectedFontSizeValue">24px</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <label for="lineHeight">行距</label>
+                    <div class="slider-container">
+                        <input type="range" id="lineHeight" min="0.8" max="3" step="0.1" value="1.4">
+                        <span class="slider-value" id="lineHeightValue">1.4</span>
+                    </div>
+                    
+                    <div class="color-settings">
+                        <div class="color-setting">
+                            <label for="textColor">文字颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="textColor" value="#ffffff">
+                                <span id="textColorValue">#FFFFFF</span>
+                            </div>
+                        </div>
+                        <div class="color-setting">
+                            <label for="bgColor">文字背景颜色</label>
+                            <div class="color-picker">
+                                <input type="color" id="bgColor" value="#000000">
+                                <span id="bgColorValue">#000000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>文字背景</h2>
+                    <label for="bgOpacity">背景透明度</label>
+                    <div class="slider-container">
+                        <input type="range" id="bgOpacity" min="0" max="100" value="50">
+                        <span class="slider-value" id="bgOpacityValue">50%</span>
+                    </div>
+                    
+                    <label for="bgHeight">背景高度（相对于文字）</label>
+                    <div class="slider-container">
+                        <input type="range" id="bgHeight" min="50" max="200" value="100">
+                        <span class="slider-value" id="bgHeightValue">100%</span>
+                    </div>
+                    
+                    <label for="maxWidth">最大宽度（占图片百分比）</label>
+                    <div class="slider-container">
+                        <input type="range" id="maxWidth" min="20" max="100" value="80">
+                        <span class="slider-value" id="maxWidthValue">80%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preview">
+                <div class="preview-content">
+                    <h2>预览</h2>
+                    <div class="preview-container" id="previewContainer">
+                        <canvas id="previewCanvas"></canvas>
+                        <div id="previewPlaceholder" class="preview-placeholder">
+                            <i>📷</i>
+                            <p>上传图片或生成空白画布后，预览将显示在这里</p>
+                        </div>
+                        <div class="drag-indicator" id="dragIndicator">拖动调整位置</div>
+                    </div>
+                    <div class="tips">
+                        <p><strong>使用提示：</strong></p>
+                        <ul>
+                            <li>在文字框中按Enter键可以手动换行，空行也会在预览中显示</li>
+                            <li>选择文字后使用"选中文字大小"滑块调整选中文字的大小</li>
+                            <li>使用"基础字体大小"滑块调整未选中文字的大小</li>
+                            <li>直接在预览区域拖动文字调整位置</li>
+                            <li>背景透明度设为0可以隐藏文字背景</li>
+                            <li>可以选择上传图片或生成空白画布</li>
+                            <li>生成图片模式下，更改设置会实时更新预览</li>
+                            <li>上传图片后可以使用扩展画布功能添加文字区域</li>
+                            <li>使用文字对齐按钮调整文字在背景框内的对齐方式</li>
+                            <li>调整行距滑块可以改变文字行与行之间的距离</li>
+                            <li>调整背景高度可以控制文字背景的垂直尺寸</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="download-btn" id="downloadBtn">下载图片</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const imageUpload = document.getElementById('imageUpload');
+            const textInput = document.getElementById('textInput');
+            const fontFamily = document.getElementById('fontFamily');
+            const fontSize = document.getElementById('fontSize');
+            const fontSizeValue = document.getElementById('fontSizeValue');
+            const selectedFontSize = document.getElementById('selectedFontSize');
+            const selectedFontSizeValue = document.getElementById('selectedFontSizeValue');
+            const textColor = document.getElementById('textColor');
+            const textColorValue = document.getElementById('textColorValue');
+            const bgColor = document.getElementById('bgColor');
+            const bgColorValue = document.getElementById('bgColorValue');
+            const bgOpacity = document.getElementById('bgOpacity');
+            const bgOpacityValue = document.getElementById('bgOpacityValue');
+            const bgHeight = document.getElementById('bgHeight');
+            const bgHeightValue = document.getElementById('bgHeightValue');
+            const maxWidth = document.getElementById('maxWidth');
+            const maxWidthValue = document.getElementById('maxWidthValue');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const previewCanvas = document.getElementById('previewCanvas');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const previewContainer = document.getElementById('previewContainer');
+            const dragIndicator = document.getElementById('dragIndicator');
+            
+            // 其他元素
+            const uploadModeBtn = document.getElementById('uploadModeBtn');
+            const generateModeBtn = document.getElementById('generateModeBtn');
+            const uploadSection = document.getElementById('uploadSection');
+            const generateSection = document.getElementById('generateSection');
+            const canvasExtensionSection = document.getElementById('canvasExtensionSection');
+            const canvasExtension = document.getElementById('canvasExtension');
+            const canvasExtensionValue = document.getElementById('canvasExtensionValue');
+            const extensionPosition = document.getElementById('extensionPosition');
+            const bgType = document.getElementById('bgType');
+            const canvasBgColor = document.getElementById('canvasBgColor');
+            const canvasBgColorValue = document.getElementById('canvasBgColorValue');
+            const bgColorSection = document.getElementById('bgColorSection');
+            const bgGradientSection = document.getElementById('bgGradientSection');
+            const gradientColor1 = document.getElementById('gradientColor1');
+            const gradientColor1Value = document.getElementById('gradientColor1Value');
+            const gradientColor2 = document.getElementById('gradientColor2');
+            const gradientColor2Value = document.getElementById('gradientColor2Value');
+            const gradientPreview = document.getElementById('gradientPreview');
+            const canvasWidth = document.getElementById('canvasWidth');
+            const canvasWidthValue = document.getElementById('canvasWidthValue');
+            const canvasHeight = document.getElementById('canvasHeight');
+            const canvasHeightValue = document.getElementById('canvasHeightValue');
+            const bgType2 = document.getElementById('bgType2');
+            const canvasBgColor2 = document.getElementById('canvasBgColor2');
+            const canvasBgColorValue2 = document.getElementById('canvasBgColorValue2');
+            const bgColorSection2 = document.getElementById('bgColorSection2');
+            const bgGradientSection2 = document.getElementById('bgGradientSection2');
+            const gradientColor12 = document.getElementById('gradientColor12');
+            const gradientColor1Value2 = document.getElementById('gradientColor1Value2');
+            const gradientColor22 = document.getElementById('gradientColor22');
+            const gradientColor2Value2 = document.getElementById('gradientColor2Value2');
+            const gradientPreview2 = document.getElementById('gradientPreview2');
+            const lineHeight = document.getElementById('lineHeight');
+            const lineHeightValue = document.getElementById('lineHeightValue');
+            const alignButtons = document.querySelectorAll('.align-btn');
+            
+            const ctx = previewCanvas.getContext('2d');
+            
+            let originalImage = null;
+            let isDragging = false;
+            let textX = 0.5;
+            let textY = 0.85;
+            let dragStartX, dragStartY;
+            let startTextX, startTextY;
+            let scaleRatio = 1;
+            let isGeneratedCanvas = false;
+            let currentMode = 'upload';
+            let extendedCanvasHeight = 0;
+            let selectedText = {
+                start: -1,
+                end: -1,
+                text: ''
+            };
+            let textAlign = 'center';
+            let lineHeightMultiplier = 1.4;
+            let bgHeightMultiplier = 1.0;
+
+            // 初始化渐变预览
+            updateGradientPreview();
+            updateGradientPreview2();
+
+            // 文字对齐按钮事件
+            alignButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    alignButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    textAlign = this.getAttribute('data-align');
+                    updatePreview();
+                });
+            });
+
+            // 行距控制事件
+            lineHeight.addEventListener('input', function() {
+                lineHeightMultiplier = parseFloat(this.value);
+                lineHeightValue.textContent = lineHeightMultiplier.toFixed(1);
+                updatePreview();
+            });
+
+            // 背景高度控制事件
+            bgHeight.addEventListener('input', function() {
+                bgHeightMultiplier = parseInt(this.value) / 100;
+                bgHeightValue.textContent = `${this.value}%`;
+                updatePreview();
+            });
+
+            // 文字选择事件
+            textInput.addEventListener('select', function() {
+                updateSelectionInfo();
+            });
+            
+            textInput.addEventListener('input', function() {
+                updateSelectionInfo();
+                updatePreview();
+            });
+            
+            textInput.addEventListener('click', function() {
+                updateSelectionInfo();
+            });
+            
+            textInput.addEventListener('keyup', function() {
+                updateSelectionInfo();
+            });
+            
+            // 更新选择信息
+            function updateSelectionInfo() {
+                const start = textInput.selectionStart;
+                const end = textInput.selectionEnd;
+                
+                if (start !== end) {
+                    selectedText.start = start;
+                    selectedText.end = end;
+                    selectedText.text = textInput.value.substring(start, end);
+                } else {
+                    selectedText.start = -1;
+                    selectedText.end = -1;
+                    selectedText.text = '';
+                }
+                updatePreview();
+            }
+
+            // 其他事件监听器保持不变...
+            // 模式切换
+            uploadModeBtn.addEventListener('click', function() {
+                uploadModeBtn.classList.add('active');
+                generateModeBtn.classList.remove('active');
+                uploadSection.style.display = 'block';
+                generateSection.style.display = 'none';
+                currentMode = 'upload';
+                if (originalImage) {
+                    updatePreview();
+                }
+            });
+            
+            generateModeBtn.addEventListener('click', function() {
+                generateModeBtn.classList.add('active');
+                uploadModeBtn.classList.remove('active');
+                uploadSection.style.display = 'none';
+                generateSection.style.display = 'block';
+                currentMode = 'generate';
+                generateCanvas();
+            });
+            
+            // 上传模式背景类型切换
+            bgType.addEventListener('change', function() {
+                if (this.value === 'color') {
+                    bgColorSection.style.display = 'block';
+                    bgGradientSection.style.display = 'none';
+                } else {
+                    bgColorSection.style.display = 'none';
+                    bgGradientSection.style.display = 'block';
+                    updateGradientPreview();
+                }
+                if (originalImage) {
+                    updatePreview();
+                }
+            });
+            
+            // 生成模式背景类型切换
+            bgType2.addEventListener('change', function() {
+                if (this.value === 'color') {
+                    bgColorSection2.style.display = 'block';
+                    bgGradientSection2.style.display = 'none';
+                } else {
+                    bgColorSection2.style.display = 'none';
+                    bgGradientSection2.style.display = 'block';
+                    updateGradientPreview2();
+                }
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            // 更新上传模式渐变预览
+            function updateGradientPreview() {
+                gradientPreview.style.background = `linear-gradient(to right, ${gradientColor1.value}, ${gradientColor2.value})`;
+            }
+            
+            // 更新生成模式渐变预览
+            function updateGradientPreview2() {
+                gradientPreview2.style.background = `linear-gradient(to right, ${gradientColor12.value}, ${gradientColor22.value})`;
+            }
+            
+            gradientColor1.addEventListener('input', function() {
+                gradientColor1Value.textContent = this.value.toUpperCase();
+                updateGradientPreview();
+                if (originalImage) {
+                    updatePreview();
+                }
+            });
+            
+            gradientColor2.addEventListener('input', function() {
+                gradientColor2Value.textContent = this.value.toUpperCase();
+                updateGradientPreview();
+                if (originalImage) {
+                    updatePreview();
+                }
+            });
+            
+            gradientColor12.addEventListener('input', function() {
+                gradientColor1Value2.textContent = this.value.toUpperCase();
+                updateGradientPreview2();
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            gradientColor22.addEventListener('input', function() {
+                gradientColor2Value2.textContent = this.value.toUpperCase();
+                updateGradientPreview2();
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            // 生成空白画布
+            function generateCanvas() {
+                const width = parseInt(canvasWidth.value);
+                const height = parseInt(canvasHeight.value);
+                
+                previewCanvas.width = width;
+                previewCanvas.height = height;
+                
+                const containerWidth = previewContainer.clientWidth;
+                scaleRatio = containerWidth / width;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                if (bgType2.value === 'color') {
+                    ctx.fillStyle = canvasBgColor2.value;
+                    ctx.fillRect(0, 0, width, height);
+                } else {
+                    const gradient = ctx.createLinearGradient(0, 0, width, height);
+                    gradient.addColorStop(0, gradientColor12.value);
+                    gradient.addColorStop(1, gradientColor22.value);
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, width, height);
+                }
+                
+                originalImage = null;
+                isGeneratedCanvas = true;
+                previewPlaceholder.style.display = 'none';
+                previewCanvas.style.display = 'block';
+                
+                if (textInput.value) {
+                    drawText();
+                }
+            }
+            
+            // 图片上传处理
+            imageUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            originalImage = img;
+                            isGeneratedCanvas = false;
+                            previewPlaceholder.style.display = 'none';
+                            previewCanvas.style.display = 'block';
+                            
+                            canvasExtensionSection.style.display = 'block';
+                            
+                            canvasExtension.value = 0;
+                            canvasExtensionValue.textContent = '0px';
+                            extendedCanvasHeight = 0;
+                            
+                            previewCanvas.width = img.width;
+                            previewCanvas.height = img.height;
+                            
+                            const containerWidth = previewContainer.clientWidth;
+                            scaleRatio = containerWidth / img.width;
+                            
+                            updatePreview();
+                        };
+                        img.src = event.target.result;
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 扩展画布功能
+            canvasExtension.addEventListener('input', function() {
+                canvasExtensionValue.textContent = `${this.value}px`;
+                extendedCanvasHeight = parseInt(this.value);
+                updatePreview();
+            });
+            
+            extensionPosition.addEventListener('change', function() {
+                updatePreview();
+            });
+            
+            // 鼠标按下事件 - 开始拖动
+            previewContainer.addEventListener('mousedown', function(e) {
+                if (!originalImage && !isGeneratedCanvas) return;
+                
+                const rect = previewCanvas.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left) / scaleRatio;
+                const mouseY = (e.clientY - rect.top) / scaleRatio;
+                
+                const text = textInput.value;
+                if (!text) return;
+                
+                const fontSizeVal = parseInt(fontSize.value);
+                ctx.font = `${fontSizeVal}px ${fontFamily.value}`;
+                
+                const maxWidthPercent = parseInt(maxWidth.value);
+                const maxTextWidth = previewCanvas.width * maxWidthPercent / 100;
+                
+                const lines = wrapText(ctx, text, maxTextWidth);
+                const lineHeightVal = fontSizeVal * lineHeightMultiplier;
+                const totalTextHeight = lines.length * lineHeightVal;
+                
+                const paddingValue = 10;
+                const bgWidth = maxTextWidth + paddingValue * 2;
+                const bgHeight = totalTextHeight * bgHeightMultiplier + paddingValue * 2;
+                
+                const canvasX = textX * previewCanvas.width;
+                const canvasY = textY * previewCanvas.height;
+                
+                const bgLeft = canvasX - bgWidth / 2;
+                const bgTop = canvasY - bgHeight / 2;
+                const bgRight = bgLeft + bgWidth;
+                const bgBottom = bgTop + bgHeight;
+                
+                if (mouseX >= bgLeft && mouseX <= bgRight && 
+                    mouseY >= bgTop && mouseY <= bgBottom) {
+                    isDragging = true;
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+                    startTextX = textX;
+                    startTextY = textY;
+                    previewContainer.style.cursor = 'grabbing';
+                    dragIndicator.style.display = 'block';
+                    e.preventDefault();
+                }
+            });
+            
+            // 鼠标移动事件 - 拖动文字
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging || (!originalImage && !isGeneratedCanvas)) return;
+                
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                
+                const displayWidth = previewCanvas.width * scaleRatio;
+                const displayHeight = previewCanvas.height * scaleRatio;
+                
+                textX = Math.max(0, Math.min(1, startTextX + deltaX / displayWidth));
+                textY = Math.max(0, Math.min(1, startTextY + deltaY / displayHeight));
+                
+                updatePreview();
+            });
+            
+            // 鼠标释放事件 - 结束拖动
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    previewContainer.style.cursor = 'move';
+                    dragIndicator.style.display = 'none';
+                }
+            });
+            
+            // 将文本分割成多行 - 支持手动换行和空行
+            function wrapText(context, text, maxWidth) {
+                const paragraphs = text.split('\n');
+                const lines = [];
+                
+                for (let p = 0; p < paragraphs.length; p++) {
+                    const paragraph = paragraphs[p];
+                    
+                    // 如果是空行，添加一个空字符串
+                    if (paragraph === '') {
+                        lines.push('');
+                        continue;
+                    }
+                    
+                    let currentLine = '';
+                    
+                    for (let i = 0; i < paragraph.length; i++) {
+                        const char = paragraph[i];
+                        const testLine = currentLine + char;
+                        const metrics = context.measureText(testLine);
+                        const testWidth = metrics.width;
+                        
+                        if (testWidth > maxWidth && currentLine !== '') {
+                            lines.push(currentLine);
+                            currentLine = char;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    
+                    if (currentLine !== '') {
+                        lines.push(currentLine);
+                    }
+                }
+                
+                return lines;
+            }
+            
+            // 绘制混合大小的文字（部分文字大小不同）
+            function drawMixedSizeText(text, x, y, maxTextWidth, baseFontSizeVal, selectedFontSizeVal) {
+                const paragraphs = text.split('\n');
+                const lines = [];
+                const lineStyles = [];
+                
+                let globalIndex = 0;
+                for (let p = 0; p < paragraphs.length; p++) {
+                    const paragraph = paragraphs[p];
+                    
+                    // 处理空行
+                    if (paragraph === '') {
+                        lines.push('');
+                        lineStyles.push([]);
+                        globalIndex++;
+                        continue;
+                    }
+                    
+                    let currentLine = '';
+                    let currentLineStyles = [];
+                    
+                    for (let i = 0; i < paragraph.length; i++) {
+                        const char = paragraph[i];
+                        
+                        let currentFontSize = baseFontSizeVal;
+                        if (globalIndex >= selectedText.start && globalIndex < selectedText.end) {
+                            currentFontSize = selectedFontSizeVal;
+                        }
+                        
+                        ctx.font = `${currentFontSize}px ${fontFamily.value}`;
+                        const testLine = currentLine + char;
+                        const metrics = ctx.measureText(testLine);
+                        const testWidth = metrics.width;
+                        
+                        if (testWidth > maxTextWidth && currentLine !== '') {
+                            lines.push(currentLine);
+                            lineStyles.push(currentLineStyles);
+                            currentLine = char;
+                            currentLineStyles = [{
+                                char: char,
+                                fontSize: currentFontSize
+                            }];
+                        } else {
+                            currentLine = testLine;
+                            currentLineStyles.push({
+                                char: char,
+                                fontSize: currentFontSize
+                            });
+                        }
+                        
+                        globalIndex++;
+                    }
+                    
+                    if (currentLine !== '') {
+                        lines.push(currentLine);
+                        lineStyles.push(currentLineStyles);
+                    }
+                    
+                    if (p < paragraphs.length - 1) {
+                        globalIndex++;
+                    }
+                }
+                
+                let totalTextHeight = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i] === '') {
+                        // 空行的高度等于基础字体大小乘以行距
+                        totalTextHeight += baseFontSizeVal * lineHeightMultiplier;
+                    } else {
+                        const maxLineFontSize = Math.max(...lineStyles[i].map(style => style.fontSize));
+                        totalTextHeight += maxLineFontSize * lineHeightMultiplier;
+                    }
+                }
+                
+                const paddingValue = 10;
+                const bgWidth = maxTextWidth + paddingValue * 2;
+                const bgHeight = totalTextHeight * bgHeightMultiplier + paddingValue * 2;
+                
+                // 绘制背景矩形 - 确保对称缩放
+                ctx.globalAlpha = bgOpacity.value / 100;
+                ctx.fillStyle = bgColor.value;
+                ctx.fillRect(
+                    x - bgWidth / 2,  // 左右对称
+                    y - bgHeight / 2, // 上下对称
+                    bgWidth, 
+                    bgHeight
+                );
+                
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = textColor.value;
+                
+                // 修复：文字位置基于背景框计算，确保在背景框内垂直居中
+                let currentY = y - bgHeight / 2 + paddingValue;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const styles = lineStyles[i];
+                    
+                    if (line === '') {
+                        // 空行只增加高度，不绘制文字
+                        currentY += baseFontSizeVal * lineHeightMultiplier;
+                    } else {
+                        const maxLineFontSize = Math.max(...styles.map(style => style.fontSize));
+                        
+                        // 使用新的绘制方法，避免文字重叠
+                        drawMixedSizeLineNew(styles, x, currentY + maxLineFontSize * 0.7, maxTextWidth);
+                        
+                        currentY += maxLineFontSize * lineHeightMultiplier;
+                    }
+                }
+            }
+            
+            // 新的绘制混合大小单行文字方法 - 避免重叠
+            function drawMixedSizeLineNew(styles, x, y, maxTextWidth) {
+                let totalWidth = 0;
+                
+                // 先计算所有字符的宽度
+                for (let i = 0; i < styles.length; i++) {
+                    const style = styles[i];
+                    ctx.font = `${style.fontSize}px ${fontFamily.value}`;
+                    const charWidth = ctx.measureText(style.char).width;
+                    totalWidth += charWidth;
+                }
+                
+                let currentX;
+                if (textAlign === 'left') {
+                    currentX = x - maxTextWidth / 2;
+                } else if (textAlign === 'right') {
+                    currentX = x + maxTextWidth / 2 - totalWidth;
+                } else {
+                    currentX = x - totalWidth / 2;
+                }
+                
+                // 按顺序绘制每个字符
+                for (let i = 0; i < styles.length; i++) {
+                    const style = styles[i];
+                    ctx.font = `${style.fontSize}px ${fontFamily.value}`;
+                    const charWidth = ctx.measureText(style.char).width;
+                    
+                    ctx.fillText(style.char, currentX, y);
+                    currentX += charWidth;
+                }
+            }
+            
+            // 绘制统一大小的文字
+            function drawUniformText(text, x, y, maxTextWidth, fontSizeVal) {
+                ctx.font = `${fontSizeVal}px ${fontFamily.value}`;
+                ctx.fillStyle = textColor.value;
+                ctx.textBaseline = 'middle';
+                
+                const lines = wrapText(ctx, text, maxTextWidth);
+                const lineHeightVal = fontSizeVal * lineHeightMultiplier;
+                
+                // 计算总高度，包括空行
+                let totalTextHeight = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    totalTextHeight += lineHeightVal;
+                }
+                
+                const paddingValue = 10;
+                const bgWidth = maxTextWidth + paddingValue * 2;
+                const bgHeight = totalTextHeight * bgHeightMultiplier + paddingValue * 2;
+                
+                // 绘制背景矩形 - 确保对称缩放
+                ctx.globalAlpha = bgOpacity.value / 100;
+                ctx.fillStyle = bgColor.value;
+                ctx.fillRect(
+                    x - bgWidth / 2,  // 左右对称
+                    y - bgHeight / 2, // 上下对称
+                    bgWidth, 
+                    bgHeight
+                );
+                
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = textColor.value;
+                
+                const bgLeft = x - bgWidth / 2;
+                const bgRight = x + bgWidth / 2;
+                
+                // 修复：文字位置基于背景框计算，确保在背景框内垂直居中
+                const textStartY = y - bgHeight / 2 + paddingValue;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    // 跳过空行的绘制
+                    if (lines[i] === '') continue;
+                    
+                    let textX;
+                    if (textAlign === 'left') {
+                        textX = bgLeft + paddingValue;
+                    } else if (textAlign === 'right') {
+                        textX = bgRight - paddingValue;
+                    } else {
+                        textX = x;
+                    }
+                    
+                    ctx.textAlign = textAlign;
+                    
+                    ctx.fillText(
+                        lines[i], 
+                        textX, 
+                        textStartY + lineHeightVal * (i + 0.5)
+                    );
+                }
+            }
+            
+            // 绘制文字
+            function drawText() {
+                const text = textInput.value;
+                if (!text) return;
+                
+                const baseFontSizeVal = parseInt(fontSize.value);
+                const selectedFontSizeVal = parseInt(selectedFontSize.value);
+                
+                const maxWidthPercent = parseInt(maxWidth.value);
+                const maxTextWidth = previewCanvas.width * maxWidthPercent / 100;
+                
+                const x = textX * previewCanvas.width;
+                const y = textY * previewCanvas.height;
+                
+                if (selectedText.start !== -1 && selectedText.end !== -1) {
+                    drawMixedSizeText(text, x, y, maxTextWidth, baseFontSizeVal, selectedFontSizeVal);
+                } else {
+                    drawUniformText(text, x, y, maxTextWidth, baseFontSizeVal);
+                }
+            }
+            
+            // 更新预览
+            function updatePreview() {
+                if (!originalImage && !isGeneratedCanvas) return;
+                
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                if (originalImage) {
+                    if (extendedCanvasHeight > 0) {
+                        previewCanvas.width = originalImage.width;
+                        previewCanvas.height = originalImage.height + extendedCanvasHeight;
+                        const containerWidth = previewContainer.clientWidth;
+                        scaleRatio = containerWidth / previewCanvas.width;
+                    } else {
+                        previewCanvas.width = originalImage.width;
+                        previewCanvas.height = originalImage.height;
+                        const containerWidth = previewContainer.clientWidth;
+                        scaleRatio = containerWidth / previewCanvas.width;
+                    }
+                    
+                    if (bgType.value === 'color') {
+                        ctx.fillStyle = canvasBgColor.value;
+                    } else {
+                        const gradient = ctx.createLinearGradient(0, 0, previewCanvas.width, previewCanvas.height);
+                        gradient.addColorStop(0, gradientColor1.value);
+                        gradient.addColorStop(1, gradientColor2.value);
+                        ctx.fillStyle = gradient;
+                    }
+                    
+                    if (extensionPosition.value === 'top') {
+                        ctx.fillRect(0, 0, previewCanvas.width, extendedCanvasHeight);
+                        ctx.drawImage(originalImage, 0, extendedCanvasHeight, originalImage.width, originalImage.height);
+                    } else {
+                        ctx.drawImage(originalImage, 0, 0, originalImage.width, originalImage.height);
+                        ctx.fillRect(0, originalImage.height, previewCanvas.width, extendedCanvasHeight);
+                    }
+                } else if (isGeneratedCanvas) {
+                    if (bgType2.value === 'color') {
+                        ctx.fillStyle = canvasBgColor2.value;
+                        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    } else {
+                        const gradient = ctx.createLinearGradient(0, 0, previewCanvas.width, previewCanvas.height);
+                        gradient.addColorStop(0, gradientColor12.value);
+                        gradient.addColorStop(1, gradientColor22.value);
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    }
+                }
+                
+                drawText();
+            }
+            
+            // 绑定事件监听器
+            fontFamily.addEventListener('change', updatePreview);
+            fontSize.addEventListener('input', function() {
+                fontSizeValue.textContent = `${this.value}px`;
+                updatePreview();
+            });
+            selectedFontSize.addEventListener('input', function() {
+                selectedFontSizeValue.textContent = `${this.value}px`;
+                updatePreview();
+            });
+            textColor.addEventListener('input', function() {
+                textColorValue.textContent = this.value.toUpperCase();
+                updatePreview();
+            });
+            bgColor.addEventListener('input', function() {
+                bgColorValue.textContent = this.value.toUpperCase();
+                updatePreview();
+            });
+            bgOpacity.addEventListener('input', function() {
+                bgOpacityValue.textContent = `${this.value}%`;
+                updatePreview();
+            });
+            bgHeight.addEventListener('input', function() {
+                bgHeightValue.textContent = `${this.value}%`;
+                updatePreview();
+            });
+            maxWidth.addEventListener('input', function() {
+                maxWidthValue.textContent = `${this.value}%`;
+                updatePreview();
+            });
+            
+            canvasBgColor.addEventListener('input', function() {
+                canvasBgColorValue.textContent = this.value.toUpperCase();
+                if (originalImage) {
+                    updatePreview();
+                }
+            });
+            
+            canvasWidth.addEventListener('input', function() {
+                canvasWidthValue.textContent = `${this.value}px`;
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            canvasHeight.addEventListener('input', function() {
+                canvasHeightValue.textContent = `${this.value}px`;
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            canvasBgColor2.addEventListener('input', function() {
+                canvasBgColorValue2.textContent = this.value.toUpperCase();
+                if (currentMode === 'generate') {
+                    generateCanvas();
+                }
+            });
+            
+            // 下载图片
+            downloadBtn.addEventListener('click', function() {
+                if (!originalImage && !isGeneratedCanvas) {
+                    alert('请先上传图片或生成空白画布！');
+                    return;
+                }
+                
+                const link = document.createElement('a');
+                link.download = 'image-with-text.jpeg';
+                link.href = previewCanvas.toDataURL('image/jpeg');
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>
