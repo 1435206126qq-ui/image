@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的网页编辑器合集</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #eef2f3, #d9e8f5);
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #0070f3;
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      padding: 60px 10%;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .card h2 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 20px;
+      min-height: 40px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #0070f3;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
+    footer {
+      text-align: center;
+      color: #888;
+      padding: 20px 0 40px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>我的网页编辑器合集</header>
+
+  <main>
+    <div class="card">
+      <h2>工具 A</h2>
+      <p>功能简介：代码测试器</p>
+      <a href="a.html" class="btn">进入工具</a>
+    </div>
+
+    <div class="card">
+      <h2>工具 B</h2>
+      <p>功能简介：图片加文字工具</p>
+      <a href="b.html" class="btn">进入工具</a>
+    </div>
+
+    <div class="card">
+      <h2>工具 C</h2>
+      <p>功能简介：多图合成长图编辑器</p>
+      <a href="c.html" class="btn">进入工具</a>
+    </div>
+
+    <div class="card">
+      <h2>工具 D</h2>
+      <p>功能简介：文字生成图片</p>
+      <a href="d.html" class="btn">进入工具</a>
+    </div>
+
+    <div class="card">
+      <h2>工具 E</h2>
+      <p>功能简介：视频截图合成长图</p>
+      <a href="e.html" class="btn">进入工具</a>
+    </div>
+  </main>
+
+  <footer>© 2025 我的工具合集 | 由 Vercel 提供部署支持</footer>
+</body>
+</html>
