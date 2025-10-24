@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片合成编辑器</title>
+    <title>图片合成编辑器 - 改进裁剪功能</title>
     <style>
         * {
             box-sizing: border-box;
@@ -15,16 +15,155 @@
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
-            padding: 20px;
             color: #333;
+            display: flex;
+        }
+        
+        /* 左侧控制面板 */
+        .control-panel {
+            width: 120px;
+            background: white;
+            padding: 20px 10px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+        
+        .square-btn {
+            width: 100px;
+            height: 80px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .square-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .global-control-container {
+            text-align: center;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .global-control-label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .mode-btn {
+            padding: 8px 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mode-btn.active {
+            background: #4b6cb7;
+            color: white;
+            border-color: #4b6cb7;
+        }
+        
+        .direction-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .direction-btn {
+            padding: 6px 3px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .direction-btn.active {
+            background: #4b6cb7;
+            color: white;
+            border-color: #4b6cb7;
+        }
+        
+        .global-slider {
+            width: 100%;
+            height: 8px;
+            margin: 10px 0;
+        }
+        
+        .global-control-value {
+            font-weight: 600;
+            color: #4b6cb7;
+            font-size: 12px;
+        }
+        
+        .selected-image-info {
+            font-size: 12px;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 30px;
+        }
+        
+        /* 右侧内容区域 */
+        .content-area {
+            flex: 1;
+            margin-left: 120px;
+            padding: 20px;
         }
         
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
             background-color: white;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
         
@@ -46,68 +185,7 @@
         }
         
         .main-content {
-            display: flex;
-            flex-direction: column;
             padding: 30px;
-        }
-        
-        .upload-area {
-            border: 3px dashed #4b6cb7;
-            border-radius: 10px;
-            padding: 40px 20px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
-            background-color: #f8faff;
-        }
-        
-        .upload-area:hover {
-            background-color: #edf2ff;
-        }
-        
-        .upload-area.highlight {
-            background-color: #e1e9ff;
-            border-color: #2c5cc5;
-        }
-        
-        .upload-icon {
-            font-size: 60px;
-            color: #4b6cb7;
-            margin-bottom: 15px;
-        }
-        
-        .upload-text {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-        }
-        
-        .btn {
-            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(90deg, #6c757d 0%, #495057 100%);
-        }
-        
-        .btn-success {
-            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
         }
         
         .preview-section {
@@ -127,6 +205,7 @@
             flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 20px;
+            position: relative;
         }
         
         .image-item {
@@ -142,6 +221,10 @@
         .image-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .image-item.selected {
+            box-shadow: 0 0 0 3px #4b6cb7;
         }
         
         .image-item.dragging {
@@ -207,18 +290,17 @@
             color: #ffcc00;
         }
         
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
         .result-section {
             text-align: center;
             margin-top: 30px;
             padding-top: 20px;
             border-top: 2px solid #eaeaea;
+        }
+        
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
         }
         
         #resultCanvas {
@@ -227,10 +309,23 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             margin-top: 20px;
             display: none;
+            cursor: pointer;
         }
         
-        .result-actions {
-            margin-top: 20px;
+        .image-adjustment-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .image-highlight {
+            position: absolute;
+            border: 3px solid #4b6cb7;
+            background-color: rgba(75, 108, 183, 0.1);
+            pointer-events: none;
             display: none;
         }
         
@@ -278,119 +373,115 @@
             margin-top: 30px;
         }
         
-        .crop-control {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .crop-control label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .crop-slider {
-            width: 100%;
-            margin: 10px 0;
-        }
-        
-        .crop-value {
-            text-align: center;
-            font-weight: 600;
-            color: #4b6cb7;
-        }
-        
         @media (max-width: 768px) {
-            .container {
-                border-radius: 0;
+            .control-panel {
+                width: 100px;
+                padding: 15px 5px;
             }
             
-            .main-content {
-                padding: 20px;
+            .square-btn {
+                width: 90px;
+                height: 70px;
+                font-size: 14px;
             }
             
-            .image-item {
-                width: calc(50% - 10px);
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
+            .content-area {
+                margin-left: 100px;
+                padding: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>图片合成编辑器</h1>
-            <p class="subtitle">轻松将多张图片按顺序合成为一张长图</p>
-        </header>
+    <!-- 左侧控制面板 -->
+    <div class="control-panel">
+        <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+        <button class="square-btn btn-primary" id="selectFilesBtn">选择图片</button>
         
-        <div class="main-content">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
-                <p class="upload-text">拖放图片到这里，或点击选择文件</p>
-                <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
-                <button class="btn" id="selectFilesBtn">选择图片</button>
+        <div class="global-control-container">
+            <div class="global-control-label">裁剪模式</div>
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="global">全局裁剪</button>
+                <button class="mode-btn" data-mode="single">单独裁剪</button>
             </div>
             
-            <div class="preview-section">
-                <h2 class="section-title">图片预览</h2>
-                <div class="sort-notice">
-                    图片将按照当前顺序从上到下合成，您可以拖动图片来调整顺序
-                </div>
-                <div class="image-list" id="imageList">
-                    <!-- 图片预览将在这里显示 -->
-                </div>
-                
-                <div class="crop-control">
-                    <label for="cropSlider">每张图片底部裁剪比例: <span id="cropValue">0%</span></label>
-                    <input type="range" id="cropSlider" class="crop-slider" min="0" max="100" value="0">
-                    <div class="crop-value">拖动滑块调整每张图片的底部裁剪比例</div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="btn" id="combineBtn">合成图片</button>
-                    <button class="btn btn-success" id="downloadBtn">下载长图</button>
-                    <button class="btn btn-secondary" id="clearBtn">清空所有</button>
-                </div>
+            <div class="global-control-label">裁剪方向</div>
+            <div class="direction-selector">
+                <button class="direction-btn active" data-direction="top">上</button>
+                <button class="direction-btn" data-direction="bottom">下</button>
+                <button class="direction-btn" data-direction="left">左</button>
+                <button class="direction-btn" data-direction="right">右</button>
             </div>
             
-            <div class="result-section">
-                <h2 class="section-title">合成结果</h2>
-                <canvas id="resultCanvas"></canvas>
-                <div class="result-actions" id="resultActions">
-                    <button class="btn btn-success" id="bottomDownloadBtn">下载长图</button>
-                </div>
-            </div>
+            <input type="range" class="global-slider" id="globalCropSlider" min="0" max="500" value="0">
+            <div class="global-control-value" id="globalCropValue">0px</div>
             
-            <div class="instructions">
-                <h3>使用说明</h3>
-                <ol>
-                    <li>点击"选择图片"按钮或直接将图片拖放到上传区域</li>
-                    <li>上传的图片将显示在预览区域，您可以拖动图片来调整顺序</li>
-                    <li>使用滑块调整每张图片的底部裁剪比例（0%-100%）</li>
-                    <li>点击"合成图片"按钮将图片按顺序合成为一张长图</li>
-                    <li>合成完成后，点击"下载长图"保存结果</li>
-                </ol>
+            <div class="selected-image-info" id="selectedImageInfo">
+                全局裁剪模式
             </div>
         </div>
         
-        <footer>
-            <p>© 2023 图片合成编辑器 | 简单易用的图片处理工具</p>
-        </footer>
+        <button class="square-btn btn-primary" id="combineBtn">合成</button>
+        <button class="square-btn btn-secondary" id="clearBtn">清空</button>
+        <button class="square-btn btn-success" id="downloadBtn">下载</button>
+    </div>
+
+    <!-- 右侧内容区域 -->
+    <div class="content-area">
+        <div class="container">
+            <header>
+                <h1>图片合成编辑器</h1>
+                <p class="subtitle">统一宽度合成 - 改进裁剪功能</p>
+            </header>
+            
+            <div class="main-content">
+                <div class="preview-section">
+                    <h2 class="section-title">图片预览</h2>
+                    <div class="sort-notice">
+                        图片将按照当前顺序从上到下合成，所有图片宽度将统一为最大图片的宽度。<br>
+                        在"单独裁剪"模式下，点击合成结果中的图片可选中进行裁剪。
+                    </div>
+                    <div class="image-list" id="imageList">
+                        <!-- 图片预览将在这里显示 -->
+                    </div>
+                </div>
+                
+                <div class="result-section">
+                    <h2 class="section-title">合成结果</h2>
+                    <div class="canvas-container">
+                        <canvas id="resultCanvas"></canvas>
+                        <div class="image-adjustment-overlay" id="imageAdjustmentOverlay">
+                            <!-- 图片高亮区域将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>使用说明</h3>
+                    <ol>
+                        <li>点击左侧"选择图片"按钮上传图片</li>
+                        <li>上传的图片将显示在预览区域，您可以拖动图片来调整顺序</li>
+                        <li>选择裁剪模式：
+                            <ul>
+                                <li><strong>全局裁剪</strong>：对所有图片应用相同的裁剪</li>
+                                <li><strong>单独裁剪</strong>：点击合成结果中的图片选中后，使用左侧滑块对单张图片进行裁剪</li>
+                            </ul>
+                        </li>
+                        <li>点击左侧"合成"按钮将图片合成为一张长图</li>
+                        <li>合成后，所有图片宽度将统一为最大图片的宽度，高度按比例调整</li>
+                        <li>调整完成后，点击左侧"下载"按钮保存结果</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <footer>
+                <p>© 2023 图片合成编辑器 | 改进裁剪功能</p>
+            </footer>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const uploadArea = document.getElementById('uploadArea');
             const fileInput = document.getElementById('fileInput');
             const selectFilesBtn = document.getElementById('selectFilesBtn');
             const imageList = document.getElementById('imageList');
@@ -398,25 +489,105 @@
             const clearBtn = document.getElementById('clearBtn');
             const resultCanvas = document.getElementById('resultCanvas');
             const downloadBtn = document.getElementById('downloadBtn');
-            const bottomDownloadBtn = document.getElementById('bottomDownloadBtn');
-            const resultActions = document.getElementById('resultActions');
-            const cropSlider = document.getElementById('cropSlider');
-            const cropValue = document.getElementById('cropValue');
+            
+            // 裁剪控件
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            const directionBtns = document.querySelectorAll('.direction-btn');
+            const globalCropSlider = document.getElementById('globalCropSlider');
+            const globalCropValue = document.getElementById('globalCropValue');
+            const selectedImageInfo = document.getElementById('selectedImageInfo');
+            
+            const imageAdjustmentOverlay = document.getElementById('imageAdjustmentOverlay');
             
             let images = [];
-            let cropRatio = 0; // 裁剪比例，0-1之间
             let draggedItem = null;
+            let imgElements = [];
             
-            // 更新裁剪比例显示
-            cropSlider.addEventListener('input', function() {
-                cropRatio = this.value / 100;
-                cropValue.textContent = this.value + '%';
+            // 裁剪值
+            let globalCropValues = {
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0
+            };
+            
+            let currentMode = 'global'; // 'global' 或 'single'
+            let currentGlobalDirection = 'top';
+            let currentSelectedIndex = -1;
+            let imagePositions = [];
+            
+            // 模式选择
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有激活状态
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    // 设置当前激活状态
+                    this.classList.add('active');
+                    currentMode = this.dataset.mode;
+                    
+                    // 更新选中图片信息显示
+                    updateSelectedImageInfo();
+                    
+                    // 如果已经有合成结果，重新合成
+                    if (resultCanvas.style.display !== 'none' && images.length > 0) {
+                        drawCombinedImage();
+                    }
+                });
+            });
+            
+            // 全局裁剪方向选择
+            directionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有激活状态
+                    directionBtns.forEach(b => b.classList.remove('active'));
+                    // 设置当前激活状态
+                    this.classList.add('active');
+                    currentGlobalDirection = this.dataset.direction;
+                    
+                    // 更新滑块值为当前方向的裁剪值
+                    if (currentMode === 'global') {
+                        globalCropSlider.value = globalCropValues[currentGlobalDirection];
+                        globalCropValue.textContent = globalCropValues[currentGlobalDirection] + 'px';
+                    } else if (currentMode === 'single' && currentSelectedIndex !== -1) {
+                        const image = images[currentSelectedIndex];
+                        globalCropSlider.value = image[currentGlobalDirection + 'Crop'];
+                        globalCropValue.textContent = image[currentGlobalDirection + 'Crop'] + 'px';
+                    }
+                });
+            });
+            
+            // 裁剪滑块事件
+            globalCropSlider.addEventListener('input', function() {
+                const cropValue = parseInt(this.value);
                 
-                // 如果已经有合成结果，重新合成以应用新的裁剪比例
+                if (currentMode === 'global') {
+                    // 全局裁剪模式
+                    globalCropValues[currentGlobalDirection] = cropValue;
+                    globalCropValue.textContent = cropValue + 'px';
+                } else if (currentMode === 'single' && currentSelectedIndex !== -1) {
+                    // 单独裁剪模式
+                    const image = images[currentSelectedIndex];
+                    image[currentGlobalDirection + 'Crop'] = cropValue;
+                    globalCropValue.textContent = cropValue + 'px';
+                }
+                
+                // 如果已经有合成结果，重新合成
                 if (resultCanvas.style.display !== 'none' && images.length > 0) {
-                    combineImages();
+                    drawCombinedImage();
                 }
             });
+            
+            // 更新选中图片信息
+            function updateSelectedImageInfo() {
+                if (currentMode === 'single' && currentSelectedIndex !== -1) {
+                    const image = images[currentSelectedIndex];
+                    selectedImageInfo.textContent = `选中: ${image.name}`;
+                } else if (currentMode === 'single') {
+                    selectedImageInfo.textContent = '请点击合成结果中的图片';
+                } else {
+                    selectedImageInfo.textContent = '全局裁剪模式';
+                }
+            }
             
             // 点击选择文件按钮
             selectFilesBtn.addEventListener('click', () => {
@@ -425,40 +596,6 @@
             
             // 文件选择变化
             fileInput.addEventListener('change', handleFileSelect);
-            
-            // 拖放功能
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, highlight, false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, unhighlight, false);
-            });
-            
-            function highlight() {
-                uploadArea.classList.add('highlight');
-            }
-            
-            function unhighlight() {
-                uploadArea.classList.remove('highlight');
-            }
-            
-            uploadArea.addEventListener('drop', handleDrop, false);
-            
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles(files);
-            }
             
             function handleFileSelect(e) {
                 const files = e.target.files;
@@ -476,12 +613,22 @@
                     
                     reader.onload = (function(file) {
                         return function(e) {
-                            images.push({
-                                src: e.target.result,
-                                name: file.name
-                            });
-                            
-                            updateImageList();
+                            const img = new Image();
+                            img.onload = function() {
+                                images.push({
+                                    src: e.target.result,
+                                    name: file.name,
+                                    originalWidth: img.width,
+                                    originalHeight: img.height,
+                                    topCrop: 0,
+                                    bottomCrop: 0,
+                                    leftCrop: 0,
+                                    rightCrop: 0
+                                });
+                                
+                                updateImageList();
+                            };
+                            img.src = e.target.result;
                         };
                     })(file);
                     
@@ -519,6 +666,10 @@
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         images.splice(index, 1);
+                        if (currentSelectedIndex === index) {
+                            currentSelectedIndex = -1;
+                            updateSelectedImageInfo();
+                        }
                         updateImageList();
                     });
                     
@@ -537,6 +688,121 @@
                     imageItem.appendChild(imageActions);
                     imageList.appendChild(imageItem);
                 });
+            }
+            
+            // 创建图片高亮区域
+            function createImageHighlights() {
+                imageAdjustmentOverlay.innerHTML = '';
+                
+                images.forEach((image, index) => {
+                    if (!imgElements[index]) return;
+                    
+                    const img = imgElements[index];
+                    
+                    // 计算裁剪后的实际显示尺寸（包含全局裁剪和单独裁剪）
+                    const displayWidth = Math.max(1, img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right);
+                    const displayHeight = Math.max(1, img.height - image.topCrop - image.bottomCrop - globalCropValues.top - globalCropValues.bottom);
+                    
+                    // 计算统一宽度后的高度（保持比例）
+                    const unifiedHeight = Math.floor((resultCanvas.width / displayWidth) * displayHeight);
+                    
+                    // 保存图片位置信息
+                    imagePositions[index] = {
+                        x: 0,
+                        y: imagePositions[index] ? imagePositions[index].y : 0,
+                        width: resultCanvas.width,
+                        height: unifiedHeight
+                    };
+                    
+                    // 创建高亮区域
+                    const highlight = document.createElement('div');
+                    highlight.className = 'image-highlight';
+                    highlight.dataset.index = index;
+                    highlight.style.width = resultCanvas.width + 'px';
+                    highlight.style.height = unifiedHeight + 'px';
+                    
+                    // 如果当前是选中状态，显示高亮
+                    if (currentMode === 'single' && index === currentSelectedIndex) {
+                        highlight.style.display = 'block';
+                    }
+                    
+                    imageAdjustmentOverlay.appendChild(highlight);
+                });
+            }
+            
+            // 更新图片高亮位置
+            function updateImageHighlightPositions() {
+                let yOffset = 0;
+                
+                images.forEach((image, index) => {
+                    if (!imgElements[index]) return;
+                    
+                    const img = imgElements[index];
+                    
+                    // 计算裁剪后的实际显示尺寸（包含全局裁剪和单独裁剪）
+                    const displayWidth = Math.max(1, img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right);
+                    const displayHeight = Math.max(1, img.height - image.topCrop - image.bottomCrop - globalCropValues.top - globalCropValues.bottom);
+                    
+                    // 计算统一宽度后的高度（保持比例）
+                    const unifiedHeight = Math.floor((resultCanvas.width / displayWidth) * displayHeight);
+                    
+                    // 更新图片位置信息
+                    imagePositions[index] = {
+                        x: 0,
+                        y: yOffset,
+                        width: resultCanvas.width,
+                        height: unifiedHeight
+                    };
+                    
+                    // 更新高亮区域位置
+                    const highlight = document.querySelector(`.image-highlight[data-index="${index}"]`);
+                    if (highlight) {
+                        highlight.style.top = yOffset + 'px';
+                        highlight.style.left = '0px';
+                        highlight.style.width = resultCanvas.width + 'px';
+                        highlight.style.height = unifiedHeight + 'px';
+                        
+                        // 如果当前是选中状态，显示高亮
+                        if (currentMode === 'single' && index === currentSelectedIndex) {
+                            highlight.style.display = 'block';
+                        } else {
+                            highlight.style.display = 'none';
+                        }
+                    }
+                    
+                    yOffset += unifiedHeight;
+                });
+            }
+            
+            // 处理画布点击事件
+            function handleCanvasClick(e) {
+                if (currentMode !== 'single') return;
+                
+                const rect = resultCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // 查找点击的是哪张图片
+                for (let i = 0; i < imagePositions.length; i++) {
+                    const pos = imagePositions[i];
+                    if (pos && y >= pos.y && y <= pos.y + pos.height) {
+                        // 选中这张图片
+                        currentSelectedIndex = i;
+                        
+                        // 更新选中图片信息
+                        updateSelectedImageInfo();
+                        
+                        // 更新滑块值为当前图片的裁剪值
+                        const image = images[currentSelectedIndex];
+                        globalCropSlider.value = image[currentGlobalDirection + 'Crop'];
+                        globalCropValue.textContent = image[currentGlobalDirection + 'Crop'] + 'px';
+                        
+                        // 更新高亮显示
+                        updateImageHighlightPositions();
+                        
+                        break;
+                    }
+                }
             }
             
             // 拖拽相关函数
@@ -572,8 +838,20 @@
                     // 交换数组中的元素
                     [images[fromIndex], images[toIndex]] = [images[toIndex], images[fromIndex]];
                     
+                    // 更新选中索引
+                    if (currentSelectedIndex === fromIndex) {
+                        currentSelectedIndex = toIndex;
+                    } else if (currentSelectedIndex === toIndex) {
+                        currentSelectedIndex = fromIndex;
+                    }
+                    
                     // 更新UI
                     updateImageList();
+                    
+                    // 如果已经有合成结果，重新合成
+                    if (resultCanvas.style.display !== 'none' && images.length > 0) {
+                        combineImages();
+                    }
                 }
                 
                 return false;
@@ -601,72 +879,131 @@
                 combineBtn.textContent = '合成中...';
                 combineBtn.disabled = true;
                 
-                // 加载所有图片
-                const imgElements = [];
+                // 重置imgElements数组
+                imgElements = [];
                 let loadedCount = 0;
-                let totalWidth = 0;
-                let totalHeight = 0;
                 
+                // 加载所有图片
                 images.forEach((image, index) => {
                     const img = new Image();
                     img.onload = function() {
                         loadedCount++;
-                        
-                        // 计算每张图片裁剪后的高度
-                        const croppedHeight = Math.floor(img.height * (1 - cropRatio));
-                        
-                        totalWidth = Math.max(totalWidth, img.width);
-                        totalHeight += croppedHeight;
+                        imgElements[index] = img;
                         
                         if (loadedCount === images.length) {
                             // 所有图片加载完成
-                            drawCombinedImage(imgElements, totalWidth, totalHeight);
-                            combineBtn.textContent = '合成图片';
+                            drawCombinedImage();
+                            combineBtn.textContent = '合成';
+                            combineBtn.disabled = false;
+                        }
+                    };
+                    img.onerror = function() {
+                        console.error('图片加载失败:', image.name);
+                        loadedCount++;
+                        
+                        if (loadedCount === images.length) {
+                            combineBtn.textContent = '合成';
                             combineBtn.disabled = false;
                         }
                     };
                     img.src = image.src;
-                    imgElements.push(img);
                 });
             }
             
-            function drawCombinedImage(imgElements, width, height) {
+            function drawCombinedImage() {
                 const canvas = resultCanvas;
                 const ctx = canvas.getContext('2d');
                 
-                canvas.width = width;
-                canvas.height = height;
+                // 第一步：找到所有图片中最大的宽度
+                let maxWidth = 0;
+                
+                images.forEach((image, index) => {
+                    if (!imgElements[index]) return;
+                    
+                    const img = imgElements[index];
+                    
+                    // 计算裁剪后的实际显示尺寸（包含全局裁剪和单独裁剪）
+                    const displayWidth = Math.max(1, img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right);
+                    
+                    // 更新最大宽度
+                    maxWidth = Math.max(maxWidth, displayWidth);
+                });
+                
+                // 第二步：计算总高度和统一所有图片宽度
+                let totalHeight = 0;
+                const unifiedWidth = maxWidth;
+                
+                images.forEach((image, index) => {
+                    if (!imgElements[index]) return;
+                    
+                    const img = imgElements[index];
+                    
+                    // 计算裁剪后的实际显示尺寸（包含全局裁剪和单独裁剪）
+                    const displayWidth = Math.max(1, img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right);
+                    const displayHeight = Math.max(1, img.height - image.topCrop - image.bottomCrop - globalCropValues.top - globalCropValues.bottom);
+                    
+                    // 计算统一宽度后的高度（保持比例）
+                    const unifiedHeight = Math.floor((unifiedWidth / displayWidth) * displayHeight);
+                    
+                    totalHeight += unifiedHeight;
+                });
+                
+                canvas.width = unifiedWidth;
+                canvas.height = totalHeight;
                 
                 // 设置白色背景
                 ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, width, height);
+                ctx.fillRect(0, 0, unifiedWidth, totalHeight);
                 
-                // 绘制所有图片，每张图片都应用底部裁剪
+                // 第三步：绘制所有图片（统一宽度）
                 let yOffset = 0;
                 
-                imgElements.forEach(img => {
-                    // 计算这张图片裁剪后的高度
-                    const croppedHeight = Math.floor(img.height * (1 - cropRatio));
+                images.forEach((image, index) => {
+                    if (!imgElements[index]) return;
                     
-                    // 计算水平居中偏移
-                    const xOffset = (width - img.width) / 2;
+                    const img = imgElements[index];
                     
-                    // 绘制图片（裁剪底部）
+                    // 计算裁剪后的实际显示尺寸（包含全局裁剪和单独裁剪）
+                    const displayWidth = Math.max(1, img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right);
+                    const displayHeight = Math.max(1, img.height - image.topCrop - image.bottomCrop - globalCropValues.top - globalCropValues.bottom);
+                    
+                    // 计算统一宽度后的高度（保持比例）
+                    const unifiedHeight = Math.floor((unifiedWidth / displayWidth) * displayHeight);
+                    
+                    // 计算源图片的裁剪区域
+                    const sourceX = image.leftCrop + globalCropValues.left;
+                    const sourceY = image.topCrop + globalCropValues.top;
+                    const sourceWidth = img.width - image.leftCrop - image.rightCrop - globalCropValues.left - globalCropValues.right;
+                    const sourceHeight = img.height - image.topCrop - image.bottomCrop - globalCropValues.top - globalCropValues.bottom;
+                    
+                    // 绘制图片（应用所有裁剪和统一宽度）
                     ctx.drawImage(
                         img, 
-                        0, 0, img.width, croppedHeight, // 源图片裁剪区域（只取上部）
-                        xOffset, yOffset, img.width, croppedHeight // 目标绘制区域
+                        sourceX, sourceY, // 源图片裁剪起点
+                        sourceWidth, // 源图片裁剪宽度
+                        sourceHeight, // 源图片裁剪高度
+                        0, yOffset, unifiedWidth, unifiedHeight // 目标绘制区域（统一宽度）
                     );
                     
-                    yOffset += croppedHeight;
+                    // 保存图片位置信息
+                    imagePositions[index] = {
+                        x: 0,
+                        y: yOffset,
+                        width: unifiedWidth,
+                        height: unifiedHeight
+                    };
+                    
+                    yOffset += unifiedHeight;
                 });
                 
                 // 显示结果
                 canvas.style.display = 'block';
-                resultActions.style.display = 'block';
                 
-                // 启用下载按钮
-                downloadBtn.disabled = false;
+                // 创建图片高亮区域
+                createImageHighlights();
+                
+                // 添加画布点击事件监听
+                canvas.addEventListener('click', handleCanvasClick);
             }
             
             // 下载图片
@@ -682,26 +1019,28 @@
                 link.click();
             }
             
-            // 顶部下载按钮
+            // 下载按钮
             downloadBtn.addEventListener('click', downloadImage);
-            
-            // 底部下载按钮
-            bottomDownloadBtn.addEventListener('click', downloadImage);
             
             // 清空所有
             clearBtn.addEventListener('click', function() {
                 images = [];
+                imgElements = [];
+                currentSelectedIndex = -1;
                 updateImageList();
                 resultCanvas.style.display = 'none';
-                resultActions.style.display = 'none';
-                downloadBtn.disabled = true;
-                cropSlider.value = 0;
-                cropRatio = 0;
-                cropValue.textContent = '0%';
+                imageAdjustmentOverlay.innerHTML = '';
+                combineBtn.disabled = false;
+                combineBtn.textContent = '合成';
+                
+                // 重置全局裁剪滑块
+                globalCropValues = { top: 0, bottom: 0, left: 0, right: 0 };
+                globalCropSlider.value = 0;
+                globalCropValue.textContent = '0px';
+                
+                // 更新选中图片信息
+                updateSelectedImageInfo();
             });
-            
-            // 初始化下载按钮状态
-            downloadBtn.disabled = true;
         });
     </script>
 </body>
