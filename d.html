@@ -421,6 +421,7 @@ document.addEventListener('DOMContentLoaded', function(){
             })
         );
         
+        // 修复排序问题：按数字序号排序
         files = [
             ...imageFiles.map(file => ({ type: 'image', file })),
             ...textFiles.map((file, index) => ({ 
@@ -428,7 +429,14 @@ document.addEventListener('DOMContentLoaded', function(){
                 file,
                 content: textFileContents[index].content
             }))
-        ].sort((a, b) => a.file.name.localeCompare(b.file.name, 'zh'));
+        ].sort((a, b) => {
+            // 提取数字序号进行数字排序
+            const getNumber = (filename) => {
+                const match = filename.replace(/\.[^/.]+$/, "").match(/^(\d+)/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            return getNumber(a.file.name) - getNumber(b.file.name);
+        });
         
         subItemsData = {};
         specialNameFlags = {};
@@ -514,9 +522,12 @@ document.addEventListener('DOMContentLoaded', function(){
         const item = files[index];
         let fileName = item.file.name;
         let fullName = fileName.replace(/\.[^/.]+$/, "");
-        let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+        // 修复文件名处理：更好的正则表达式匹配序号和实际内容
+        let match = fullName.match(/^(\d+)[-_ \.]*(.*)$/);
         let number = match ? match[1] : '';
-        let text = textContents[index] || (item.type === 'image' ? (match ? match[2] : fullName) : item.content);
+        let actualName = match ? match[2].trim() : fullName;
+        
+        let text = textContents[index] || (item.type === 'image' ? actualName : item.content);
 
         const canvasWidth = 900;
         const fontSizeNumber = 80;
@@ -613,7 +624,8 @@ document.addEventListener('DOMContentLoaded', function(){
         const mainItem = files[mainIndex];
         let fileName = mainItem.file.name;
         let fullName = fileName.replace(/\.[^/.]+$/, "");
-        let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+        // 修复文件名处理
+        let match = fullName.match(/^(\d+)[-_ \.]*(.*)$/);
         let mainNumber = match ? match[1] : '';
         
         const subText = subItemsData[mainIndex][subIndex];
@@ -730,14 +742,16 @@ document.addEventListener('DOMContentLoaded', function(){
         files.forEach((item, index) => {
             let fileName = item.file.name;
             let fullName = fileName.replace(/\.[^/.]+$/, "");
-            let match = fullName.match(/^(\d+)[-_ ]?(.*)$/);
+            // 修复文件名显示：正确提取序号和实际名称
+            let match = fullName.match(/^(\d+)[-_ \.]*(.*)$/);
             let number = match ? match[1] : '';
+            let actualName = match ? match[2].trim() : fullName;
             let defaultText = '';
             
             if (item.type === 'image') {
-                defaultText = match ? match[2] : fullName;
+                defaultText = actualName;
             } else {
-                defaultText = item.content || fullName;
+                defaultText = item.content || actualName;
             }
             
             textContents[index] = defaultText;
