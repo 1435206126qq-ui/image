@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片文字添加工具</title>
     <style>
+        /* 样式保持不变，与您提供的代码相同 */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -720,6 +721,9 @@
             let lineHeightMultiplier = 1.4;
             let bgHeightMultiplier = 1.0;
 
+            // 新增：保存上传图片的变量
+            let uploadedImageData = null;
+
             // 初始化渐变预览
             updateGradientPreview();
             updateGradientPreview2();
@@ -783,7 +787,6 @@
                 updatePreview();
             }
 
-            // 其他事件监听器保持不变...
             // 模式切换
             uploadModeBtn.addEventListener('click', function() {
                 uploadModeBtn.classList.add('active');
@@ -791,7 +794,16 @@
                 uploadSection.style.display = 'block';
                 generateSection.style.display = 'none';
                 currentMode = 'upload';
-                if (originalImage) {
+                
+                // 修复：如果之前上传过图片，恢复显示
+                if (uploadedImageData) {
+                    originalImage = uploadedImageData;
+                    isGeneratedCanvas = false;
+                    previewPlaceholder.style.display = 'none';
+                    previewCanvas.style.display = 'block';
+                    canvasExtensionSection.style.display = 'block';
+                    updatePreview();
+                } else if (originalImage) {
                     updatePreview();
                 }
             });
@@ -802,6 +814,12 @@
                 uploadSection.style.display = 'none';
                 generateSection.style.display = 'block';
                 currentMode = 'generate';
+                
+                // 修复：保存上传的图片数据，不丢失
+                if (originalImage && !isGeneratedCanvas) {
+                    uploadedImageData = originalImage;
+                }
+                
                 generateCanvas();
             });
             
@@ -815,7 +833,7 @@
                     bgGradientSection.style.display = 'block';
                     updateGradientPreview();
                 }
-                if (originalImage) {
+                if (originalImage && currentMode === 'upload') {
                     updatePreview();
                 }
             });
@@ -848,7 +866,7 @@
             gradientColor1.addEventListener('input', function() {
                 gradientColor1Value.textContent = this.value.toUpperCase();
                 updateGradientPreview();
-                if (originalImage) {
+                if (originalImage && currentMode === 'upload') {
                     updatePreview();
                 }
             });
@@ -856,7 +874,7 @@
             gradientColor2.addEventListener('input', function() {
                 gradientColor2Value.textContent = this.value.toUpperCase();
                 updateGradientPreview();
-                if (originalImage) {
+                if (originalImage && currentMode === 'upload') {
                     updatePreview();
                 }
             });
@@ -901,7 +919,7 @@
                     ctx.fillRect(0, 0, width, height);
                 }
                 
-                originalImage = null;
+                // 修复：在生成模式下，确保使用生成的画布而不是上传的图片
                 isGeneratedCanvas = true;
                 previewPlaceholder.style.display = 'none';
                 previewCanvas.style.display = 'block';
@@ -921,6 +939,8 @@
                         const img = new Image();
                         img.onload = function() {
                             originalImage = img;
+                            // 修复：保存上传的图片数据
+                            uploadedImageData = img;
                             isGeneratedCanvas = false;
                             previewPlaceholder.style.display = 'none';
                             previewCanvas.style.display = 'block';
@@ -959,7 +979,9 @@
             
             // 鼠标按下事件 - 开始拖动
             previewContainer.addEventListener('mousedown', function(e) {
-                if (!originalImage && !isGeneratedCanvas) return;
+                // 修复：根据当前模式检查是否有内容
+                if (currentMode === 'upload' && !originalImage) return;
+                if (currentMode === 'generate' && !isGeneratedCanvas) return;
                 
                 const rect = previewCanvas.getBoundingClientRect();
                 const mouseX = (e.clientX - rect.left) / scaleRatio;
@@ -1005,7 +1027,10 @@
             
             // 鼠标移动事件 - 拖动文字
             document.addEventListener('mousemove', function(e) {
-                if (!isDragging || (!originalImage && !isGeneratedCanvas)) return;
+                // 修复：根据当前模式检查是否有内容
+                if (!isDragging) return;
+                if (currentMode === 'upload' && !originalImage) return;
+                if (currentMode === 'generate' && !isGeneratedCanvas) return;
                 
                 const deltaX = e.clientX - dragStartX;
                 const deltaY = e.clientY - dragStartY;
@@ -1293,11 +1318,13 @@
             
             // 更新预览
             function updatePreview() {
-                if (!originalImage && !isGeneratedCanvas) return;
+                // 修复：根据当前模式决定显示什么内容
+                if (currentMode === 'upload' && !originalImage) return;
+                if (currentMode === 'generate' && !isGeneratedCanvas) return;
                 
                 ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
                 
-                if (originalImage) {
+                if (currentMode === 'upload' && originalImage) {
                     if (extendedCanvasHeight > 0) {
                         previewCanvas.width = originalImage.width;
                         previewCanvas.height = originalImage.height + extendedCanvasHeight;
@@ -1326,7 +1353,8 @@
                         ctx.drawImage(originalImage, 0, 0, originalImage.width, originalImage.height);
                         ctx.fillRect(0, originalImage.height, previewCanvas.width, extendedCanvasHeight);
                     }
-                } else if (isGeneratedCanvas) {
+                } else if (currentMode === 'generate' && isGeneratedCanvas) {
+                    // 修复：确保在生成模式下使用正确的背景设置
                     if (bgType2.value === 'color') {
                         ctx.fillStyle = canvasBgColor2.value;
                         ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
@@ -1375,7 +1403,7 @@
             
             canvasBgColor.addEventListener('input', function() {
                 canvasBgColorValue.textContent = this.value.toUpperCase();
-                if (originalImage) {
+                if (originalImage && currentMode === 'upload') {
                     updatePreview();
                 }
             });
@@ -1403,7 +1431,8 @@
             
             // 下载图片
             downloadBtn.addEventListener('click', function() {
-                if (!originalImage && !isGeneratedCanvas) {
+                if ((currentMode === 'upload' && !originalImage) || 
+                    (currentMode === 'generate' && !isGeneratedCanvas)) {
                     alert('请先上传图片或生成空白画布！');
                     return;
                 }
