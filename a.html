@@ -3,193 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代码编辑器与HTML文件生成器</title>
+    <title>我的日常记录工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 原有样式保持不变 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            color: #333;
         }
         
         .container {
-            width: 90%;
-            max-width: 1000px;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
         header {
-            background: linear-gradient(90deg, #2c3e50, #4a6491);
-            color: white;
-            padding: 20px 30px;
             text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         
         h1 {
-            font-size: 2.2rem;
+            color: #2c3e50;
             margin-bottom: 10px;
+            font-size: 2.5rem;
         }
         
         .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
+            color: #7f8c8d;
+            font-size: 1.2rem;
         }
         
-        .editor-container {
-            padding: 30px;
+        .add-btn-container {
+            text-align: center;
+            margin-bottom: 30px;
         }
         
-        .code-editor {
-            width: 100%;
-            height: 400px;
-            margin-bottom: 20px;
-        }
-        
-        .editor-header {
-            background-color: #f5f5f5;
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 6px 6px 0 0;
-        }
-        
-        .editor-title {
-            font-weight: 600;
-            color: #444;
-        }
-        
-        .editor-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .editor-btn {
-            background: none;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 5px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .editor-btn:hover {
-            background-color: #e9e9e9;
-        }
-        
-        textarea {
-            width: 100%;
-            height: 100%;
+        .add-btn {
+            background: #3498db;
+            color: white;
             border: none;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            resize: none;
-            outline: none;
-            background-color: #f9f9f9;
-            border-radius: 0 0 6px 6px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .control-panel {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
             padding: 12px 25px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
+            font-size: 1.1rem;
+            border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            flex: 1;
-            min-width: 200px;
+            margin: 0 auto;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+        .add-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .add-btn:active {
+            transform: translateY(0);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: modalFade 0.3s ease;
+        }
+        
+        @keyframes modalFade {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .save-btn, .cancel-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .save-btn {
+            background: #2ecc71;
             color: white;
         }
         
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2980b9, #1c6ea4);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        .save-btn:hover {
+            background: #27ae60;
         }
         
-        .btn-secondary {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        .cancel-btn {
+            background: #e74c3c;
             color: white;
         }
         
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #27ae60, #219653);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        .cancel-btn:hover {
+            background: #c0392b;
         }
         
-        .btn-clear {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            min-width: 120px;
-            flex: 0.5;
+        .notes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
         
-        .btn-clear:hover {
-            background: linear-gradient(135deg, #c0392b, #a93226);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .footer {
+        .note {
+            background: white;
+            border-radius: 12px;
             padding: 20px;
-            text-align: center;
-            background-color: #f5f5f5;
-            border-top: 1px solid #ddd;
-            color: #666;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            cursor: grab;
+            user-select: none;
         }
         
-        @media (max-width: 600px) {
-            .control-panel {
-                flex-direction: column;
+        .note:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .note.dragging {
+            opacity: 0.7;
+            transform: rotate(5deg);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .note-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-right: 10px;
+            word-break: break-word;
+        }
+        
+        .note-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .copy-btn {
+            background: #3498db;
+            color: white;
+        }
+        
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+        
+        .edit-btn {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background: #e67e22;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        
+        .note-content {
+            color: #555;
+            line-height: 1.5;
+            word-break: break-word;
+            margin-bottom: 15px;
+        }
+        
+        .note-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #95a5a6;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .notes-container {
+                grid-template-columns: 1fr;
             }
             
-            .btn {
-                min-width: 100%;
-            }
-            
-            .btn-clear {
-                min-width: 100%;
-                flex: 1;
-            }
-            
-            .editor-actions {
-                flex-direction: column;
+            .modal-content {
+                width: 95%;
+                padding: 20px;
             }
         }
     </style>
@@ -197,159 +342,332 @@
 <body>
     <div class="container">
         <header>
-            <h1>代码编辑器与HTML文件生成器</h1>
-            <p class="subtitle">编写、测试并下载您的HTML文件</p>
+            <h1>我的日常记录工具</h1>
+            <p class="subtitle">记录生活中的点滴，管理日常内容</p>
         </header>
         
-        <div class="editor-container">
-            <div class="code-editor">
-                <div class="editor-header">
-                    <span class="editor-title">HTML 代码</span>
-                    <div class="editor-actions">
-                        <button id="paste-btn" class="editor-btn">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M10.5 1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V4.5L10.5 1zM3 0h8l4 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
-                                <path d="M8 4a.5.5 0 0 1 .5.5V6H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V7H6a.5.5 0 0 1 0-1h1.5V4.5A.5.5 0 0 1 8 4z"/>
-                            </svg>
-                            粘贴
-                        </button>
-                    </div>
-                </div>
-                <textarea id="html-code" placeholder="在此粘贴您的HTML代码..."></textarea>
-            </div>
-            
-            <div class="control-panel">
-                <button id="run-btn" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                    </svg>
-                    运行代码
-                </button>
-                <button id="download-btn" class="btn btn-secondary">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                    </svg>
-                    下载HTML文件
-                </button>
-                <button id="clear-btn" class="btn btn-clear">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                    </svg>
-                    清空代码
-                </button>
-            </div>
+        <div class="add-btn-container">
+            <button class="add-btn" id="addBtn">
+                <i class="fas fa-plus"></i> 添加新记录
+            </button>
         </div>
         
-        <div class="footer">
-            <p>代码编辑器与HTML文件生成器 &copy; 2023</p>
+        <div class="notes-container" id="notesContainer">
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-sticky-note"></i>
+                <h3>还没有任何记录</h3>
+                <p>点击上方按钮添加第一条记录</p>
+            </div>
         </div>
     </div>
+    
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">添加新记录</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <form id="noteForm">
+                <div class="form-group">
+                    <label for="noteTitle">标题</label>
+                    <input type="text" id="noteTitle" placeholder="输入标题..." required>
+                </div>
+                <div class="form-group">
+                    <label for="noteContent">内容</label>
+                    <textarea id="noteContent" placeholder="输入内容..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelBtn">取消</button>
+                    <button type="submit" class="save-btn" id="saveBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">内容已复制到剪贴板</div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const htmlCode = document.getElementById('html-code');
-            const runBtn = document.getElementById('run-btn');
-            const downloadBtn = document.getElementById('download-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const pasteBtn = document.getElementById('paste-btn');
+        // DOM元素
+        const addBtn = document.getElementById('addBtn');
+        const modal = document.getElementById('modal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const noteForm = document.getElementById('noteForm');
+        const notesContainer = document.getElementById('notesContainer');
+        const emptyState = document.getElementById('emptyState');
+        const modalTitle = document.getElementById('modalTitle');
+        const saveBtn = document.getElementById('saveBtn');
+        const toast = document.getElementById('toast');
+        
+        // 从本地存储加载笔记
+        let notes = JSON.parse(localStorage.getItem('dailyNotes')) || [];
+        let currentEditingIndex = -1;
+        let draggedNote = null;
+        
+        // 显示/隐藏空状态
+        function toggleEmptyState() {
+            if (notes.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+        
+        // 渲染笔记
+        function renderNotes() {
+            notesContainer.innerHTML = '';
             
-            // 运行代码按钮事件
-            runBtn.addEventListener('click', function() {
-                const htmlContent = htmlCode.value;
-                if (!htmlContent.trim()) {
-                    alert('请输入HTML代码！');
-                    return;
-                }
-                
-                // 在新标签页中打开代码
-                const newWindow = window.open();
-                newWindow.document.write(htmlContent);
-                newWindow.document.close();
-            });
-            
-            // 下载HTML文件
-            downloadBtn.addEventListener('click', function() {
-                const htmlContent = htmlCode.value;
-                if (!htmlContent.trim()) {
-                    alert('请输入HTML代码！');
-                    return;
-                }
-                
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'generated-page.html';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-            
-            // 清空代码按钮事件
-            clearBtn.addEventListener('click', function() {
-                htmlCode.value = '';
-                htmlCode.focus();
-            });
-            
-            // 粘贴按钮事件 - 使用传统方法
-            pasteBtn.addEventListener('click', function() {
-                // 先聚焦到文本区域
-                htmlCode.focus();
-                
-                try {
-                    // 尝试使用传统execCommand方法
-                    if (document.execCommand('paste')) {
-                        return;
-                    }
-                } catch (e) {
-                    // execCommand失败，尝试使用现代Clipboard API
-                }
-                
-                // 如果传统方法不可用，使用现代Clipboard API
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                    navigator.clipboard.readText()
-                        .then(text => {
-                            // 在光标位置插入文本
-                            const cursorPosition = htmlCode.selectionStart;
-                            const textBefore = htmlCode.value.substring(0, cursorPosition);
-                            const textAfter = htmlCode.value.substring(cursorPosition);
-                            
-                            htmlCode.value = textBefore + text + textAfter;
-                            
-                            // 设置光标位置
-                            htmlCode.selectionStart = cursorPosition + text.length;
-                            htmlCode.selectionEnd = cursorPosition + text.length;
-                        })
-                        .catch(err => {
-                            console.error('粘贴失败:', err);
-                            showPasteInstructions();
-                        });
-                } else {
-                    // 浏览器不支持剪贴板API
-                    showPasteInstructions();
-                }
-            });
-            
-            // 显示粘贴说明
-            function showPasteInstructions() {
-                alert('您的浏览器不支持一键粘贴功能。\n\n请使用以下方法：\n1. 点击文本框\n2. 使用键盘快捷键 Ctrl+V (Windows) 或 Cmd+V (Mac)');
+            if (notes.length === 0) {
+                toggleEmptyState();
+                return;
             }
             
-            // 添加键盘快捷键支持
-            htmlCode.addEventListener('keydown', function(e) {
-                // 监听Ctrl+V或Cmd+V
-                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                    // 让浏览器处理默认粘贴行为
-                    setTimeout(() => {
-                        // 粘贴完成后可以在这里添加额外处理
-                    }, 0);
-                }
+            notes.forEach((note, index) => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.setAttribute('draggable', 'true');
+                noteElement.setAttribute('data-index', index);
+                
+                noteElement.innerHTML = `
+                    <div class="note-header">
+                        <h3 class="note-title">${note.title}</h3>
+                        <div class="note-actions">
+                            <button class="action-btn copy-btn" data-index="${index}" title="复制内容">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="action-btn edit-btn" data-index="${index}" title="编辑">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" data-index="${index}" title="删除">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="note-content">${note.content}</div>
+                    <div class="note-footer">
+                        <span>创建: ${formatDate(note.createdAt)}</span>
+                        <span>${note.updatedAt ? '更新: ' + formatDate(note.updatedAt) : ''}</span>
+                    </div>
+                `;
+                notesContainer.appendChild(noteElement);
             });
+            
+            // 添加事件监听器
+            addEventListeners();
+            toggleEmptyState();
+        }
+        
+        // 添加事件监听器
+        function addEventListeners() {
+            // 删除按钮
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    deleteNote(index);
+                });
+            });
+            
+            // 编辑按钮
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    editNote(index);
+                });
+            });
+            
+            // 复制按钮
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    copyNoteContent(index);
+                });
+            });
+            
+            // 拖动功能
+            document.querySelectorAll('.note').forEach(note => {
+                note.addEventListener('dragstart', handleDragStart);
+                note.addEventListener('dragend', handleDragEnd);
+                note.addEventListener('dragover', handleDragOver);
+                note.addEventListener('dragenter', handleDragEnter);
+                note.addEventListener('dragleave', handleDragLeave);
+                note.addEventListener('drop', handleDrop);
+            });
+        }
+        
+        // 拖动功能实现
+        function handleDragStart(e) {
+            draggedNote = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+        
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.note').forEach(note => {
+                note.style.borderTop = '';
+            });
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            return false;
+        }
+        
+        function handleDragEnter(e) {
+            this.style.borderTop = '2px solid #3498db';
+        }
+        
+        function handleDragLeave() {
+            this.style.borderTop = '';
+        }
+        
+        function handleDrop(e) {
+            e.stopPropagation();
+            
+            if (draggedNote !== this) {
+                const fromIndex = parseInt(draggedNote.getAttribute('data-index'));
+                const toIndex = parseInt(this.getAttribute('data-index'));
+                
+                // 重新排序数组
+                const [movedNote] = notes.splice(fromIndex, 1);
+                notes.splice(toIndex, 0, movedNote);
+                
+                // 保存并重新渲染
+                saveNotes();
+                renderNotes();
+            }
+            
+            this.style.borderTop = '';
+            return false;
+        }
+        
+        // 保存笔记到本地存储
+        function saveNotes() {
+            localStorage.setItem('dailyNotes', JSON.stringify(notes));
+        }
+        
+        // 添加新笔记
+        function addNote(title, content) {
+            const newNote = {
+                title: title,
+                content: content,
+                createdAt: new Date().toISOString(),
+                updatedAt: null
+            };
+            
+            notes.push(newNote);
+            saveNotes();
+            renderNotes();
+        }
+        
+        // 编辑笔记
+        function editNote(index) {
+            currentEditingIndex = index;
+            const note = notes[index];
+            
+            document.getElementById('noteTitle').value = note.title;
+            document.getElementById('noteContent').value = note.content;
+            modalTitle.textContent = '编辑记录';
+            saveBtn.textContent = '更新';
+            
+            modal.style.display = 'flex';
+            document.getElementById('noteTitle').focus();
+        }
+        
+        // 更新笔记
+        function updateNote(index, title, content) {
+            notes[index].title = title;
+            notes[index].content = content;
+            notes[index].updatedAt = new Date().toISOString();
+            
+            saveNotes();
+            renderNotes();
+        }
+        
+        // 删除笔记
+        function deleteNote(index) {
+            if (confirm('确定要删除这条记录吗？')) {
+                notes.splice(index, 1);
+                saveNotes();
+                renderNotes();
+            }
+        }
+        
+        // 复制笔记内容
+        function copyNoteContent(index) {
+            const content = notes[index].content;
+            navigator.clipboard.writeText(content).then(() => {
+                showToast('内容已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败: ', err);
+                showToast('复制失败，请重试');
+            });
+        }
+        
+        // 显示提示信息
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // 事件监听器
+        addBtn.addEventListener('click', () => {
+            currentEditingIndex = -1;
+            modalTitle.textContent = '添加新记录';
+            saveBtn.textContent = '保存';
+            modal.style.display = 'flex';
+            noteForm.reset();
+            document.getElementById('noteTitle').focus();
         });
+        
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+            noteForm.reset();
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            noteForm.reset();
+        });
+        
+        noteForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            
+            if (title && content) {
+                if (currentEditingIndex === -1) {
+                    addNote(title, content);
+                } else {
+                    updateNote(currentEditingIndex, title, content);
+                }
+                modal.style.display = 'none';
+                noteForm.reset();
+            }
+        });
+        
+        // 点击模态框外部关闭
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                noteForm.reset();
+            }
+        });
+        
+        // 初始化渲染
+        renderNotes();
     </script>
 </body>
 </html>
