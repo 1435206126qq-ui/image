@@ -77,13 +77,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            cursor: crosshair;
         }
         .selection-box {
             position: absolute;
             border: 2px solid red;
-            background: rgba(255,0,0,0.2);
+            background: rgba(255,0,0,0.1);
+            pointer-events: none;
         }
+        
         .controls {
             margin: 10px 0;
             display: flex;
@@ -116,7 +117,6 @@
             background: #dc3545;
         }
         
-        /* 新增选区控制滑块样式 */
         .selection-controls {
             margin: 15px 0;
             padding: 15px;
@@ -297,7 +297,7 @@
 <body>
     <div class="container">
         <h1>视频截图工具</h1>
-        <div class="keyboard-hint">💡 提示：使用键盘 ← → 方向键控制视频前进后退，空格键快速截图</div>
+        <div class="keyboard-hint">💡 提示：空格键截图 | 回车键下载 | ←→方向键控制视频 | 鼠标拖动调整选区</div>
         
         <div class="frame-control">
             <label for="frameStep">每次按键跳转帧数：</label>
@@ -312,7 +312,7 @@
                 </div>
                 
                 <div class="video-container">
-                    <video id="videoPlayer" controls></video>
+                    <video id="videoPlayer"></video>
                     <div class="selection-overlay" id="selectionOverlay"></div>
                 </div>
                 
@@ -327,19 +327,18 @@
                     <button class="btn-clear-all" id="clearAllBtn" disabled>🧹 清空所有截图</button>
                 </div>
                 
-                <!-- 新增选区控制滑块 -->
                 <div class="selection-controls">
                     <h3>选区精确控制</h3>
                     <div class="control-group">
-                        <label>宽度: <span class="slider-value" id="widthValue">0</span>px</label>
+                        <label>宽度: <span class="slider-value" id="widthValue">200</span>px</label>
                         <div class="slider-container">
-                            <input type="range" id="widthSlider" min="0" max="800" value="0" class="slider">
+                            <input type="range" id="widthSlider" min="50" max="800" value="200" class="slider">
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>高度: <span class="slider-value" id="heightValue">0</span>px</label>
+                        <label>高度: <span class="slider-value" id="heightValue">150</span>px</label>
                         <div class="slider-container">
-                            <input type="range" id="heightSlider" min="0" max="450" value="0" class="slider">
+                            <input type="range" id="heightSlider" min="50" max="450" value="150" class="slider">
                         </div>
                     </div>
                     <div class="control-group">
@@ -396,7 +395,7 @@
             const frameStepInput = document.getElementById('frameStep');
             const frameTimeInfo = document.getElementById('frameTimeInfo');
 
-            // 新增滑块控制元素
+            // 滑块控制元素
             const widthSlider = document.getElementById('widthSlider');
             const heightSlider = document.getElementById('heightSlider');
             const xSlider = document.getElementById('xSlider');
@@ -406,16 +405,281 @@
             const xValue = document.getElementById('xValue');
             const yValue = document.getElementById('yValue');
 
-            let isSelecting = false;
-            let startX, startY;
             let currentSelection = null;
-            let lastSelection = null;
+            let lastSelection = {
+                x: 0,
+                y: 0,
+                width: 200,
+                height: 150
+            };
             let screenshots = [];
             let isDraggingProgress = false;
             let dragSrcElement = null;
-            let videoFrameRate = 30; // 默认帧率
-            let videoDisplayWidth = 800; // 视频显示宽度
-            let videoDisplayHeight = 450; // 视频显示高度
+            let videoFrameRate = 30;
+            let videoDisplayWidth = 800;
+            let videoDisplayHeight = 450;
+
+            // 选区交互状态 - 简化版本
+            let isDraggingSelection = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let initialSelectionState = null;
+            let currentAction = null; // 'move', 'resize-n', 'resize-s', etc.
+
+            // 初始化选区 - 简化版本
+            function initializeSelection() {
+                if (!currentSelection) {
+                    currentSelection = document.createElement('div');
+                    currentSelection.className = 'selection-box';
+                    selectionOverlay.appendChild(currentSelection);
+                }
+                updateSelectionDisplay();
+            }
+
+            // 更新选区显示 - 简化版本
+            function updateSelectionDisplay() {
+                if (!currentSelection) return;
+                
+                currentSelection.style.left = lastSelection.x + 'px';
+                currentSelection.style.top = lastSelection.y + 'px';
+                currentSelection.style.width = lastSelection.width + 'px';
+                currentSelection.style.height = lastSelection.height + 'px';
+            }
+
+            // 获取鼠标在选区中的位置 - 简化版本
+            function getMouseAction(mouseX, mouseY) {
+                const rect = lastSelection;
+                const edgeSize = 8; // 边缘检测区域大小
+                
+                // 检查是否在边缘区域
+                const inLeftEdge = mouseX >= rect.x - edgeSize && mouseX <= rect.x + edgeSize;
+                const inRightEdge = mouseX >= rect.x + rect.width - edgeSize && mouseX <= rect.x + rect.width + edgeSize;
+                const inTopEdge = mouseY >= rect.y - edgeSize && mouseY <= rect.y + edgeSize;
+                const inBottomEdge = mouseY >= rect.y + rect.height - edgeSize && mouseY <= rect.y + rect.height + edgeSize;
+                
+                // 检查是否在选区内部
+                const inSelection = mouseX >= rect.x && mouseX <= rect.x + rect.width &&
+                                  mouseY >= rect.y && mouseY <= rect.y + rect.height;
+
+                // 确定操作类型
+                if (inTopEdge && inLeftEdge) return 'resize-nw';
+                if (inTopEdge && inRightEdge) return 'resize-ne';
+                if (inBottomEdge && inLeftEdge) return 'resize-sw';
+                if (inBottomEdge && inRightEdge) return 'resize-se';
+                if (inTopEdge) return 'resize-n';
+                if (inBottomEdge) return 'resize-s';
+                if (inLeftEdge) return 'resize-w';
+                if (inRightEdge) return 'resize-e';
+                if (inSelection) return 'move';
+                
+                return 'outside';
+            }
+
+            // 更新光标样式 - 简化版本
+            function updateCursorStyle(mouseX, mouseY) {
+                const action = getMouseAction(mouseX, mouseY);
+                
+                switch (action) {
+                    case 'move':
+                        selectionOverlay.style.cursor = 'move';
+                        break;
+                    case 'resize-n':
+                    case 'resize-s':
+                        selectionOverlay.style.cursor = 'ns-resize';
+                        break;
+                    case 'resize-w':
+                    case 'resize-e':
+                        selectionOverlay.style.cursor = 'ew-resize';
+                        break;
+                    case 'resize-nw':
+                    case 'resize-se':
+                        selectionOverlay.style.cursor = 'nwse-resize';
+                        break;
+                    case 'resize-ne':
+                    case 'resize-sw':
+                        selectionOverlay.style.cursor = 'nesw-resize';
+                        break;
+                    default:
+                        selectionOverlay.style.cursor = 'default';
+                }
+            }
+
+            // 选区鼠标事件 - 简化版本
+            selectionOverlay.addEventListener('mousedown', function(e) {
+                const mouseX = e.offsetX;
+                const mouseY = e.offsetY;
+                const action = getMouseAction(mouseX, mouseY);
+
+                if (action !== 'outside') {
+                    isDraggingSelection = true;
+                    dragStartX = mouseX;
+                    dragStartY = mouseY;
+                    initialSelectionState = { ...lastSelection };
+                    currentAction = action;
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+            selectionOverlay.addEventListener('mousemove', function(e) {
+                const mouseX = e.offsetX;
+                const mouseY = e.offsetY;
+                
+                // 更新光标样式
+                if (!isDraggingSelection) {
+                    updateCursorStyle(mouseX, mouseY);
+                }
+                
+                // 处理拖动
+                if (isDraggingSelection) {
+                    const deltaX = mouseX - dragStartX;
+                    const deltaY = mouseY - dragStartY;
+                    
+                    if (currentAction === 'move') {
+                        // 移动整个选区
+                        let newX = initialSelectionState.x + deltaX;
+                        let newY = initialSelectionState.y + deltaY;
+                        
+                        // 边界检查
+                        newX = Math.max(0, Math.min(newX, videoDisplayWidth - lastSelection.width));
+                        newY = Math.max(0, Math.min(newY, videoDisplayHeight - lastSelection.height));
+                        
+                        lastSelection.x = newX;
+                        lastSelection.y = newY;
+                    } else {
+                        // 调整尺寸
+                        adjustSelectionSize(deltaX, deltaY);
+                    }
+                    
+                    updateSelectionDisplay();
+                }
+            });
+
+            selectionOverlay.addEventListener('mouseup', function() {
+                if (isDraggingSelection) {
+                    isDraggingSelection = false;
+                    currentAction = null;
+                    initialSelectionState = null;
+                    
+                    // 拖动结束后更新滑块
+                    updateSlidersFromSelection();
+                }
+            });
+
+            // 调整选区尺寸 - 简化版本
+            function adjustSelectionSize(deltaX, deltaY) {
+                const minSize = 20;
+                let newX = initialSelectionState.x;
+                let newY = initialSelectionState.y;
+                let newWidth = initialSelectionState.width;
+                let newHeight = initialSelectionState.height;
+
+                switch (currentAction) {
+                    case 'resize-n':
+                        newY = initialSelectionState.y + deltaY;
+                        newHeight = initialSelectionState.height - deltaY;
+                        if (newHeight < minSize) {
+                            newHeight = minSize;
+                            newY = initialSelectionState.y + initialSelectionState.height - minSize;
+                        }
+                        break;
+                    case 'resize-s':
+                        newHeight = initialSelectionState.height + deltaY;
+                        if (newHeight < minSize) newHeight = minSize;
+                        break;
+                    case 'resize-w':
+                        newX = initialSelectionState.x + deltaX;
+                        newWidth = initialSelectionState.width - deltaX;
+                        if (newWidth < minSize) {
+                            newWidth = minSize;
+                            newX = initialSelectionState.x + initialSelectionState.width - minSize;
+                        }
+                        break;
+                    case 'resize-e':
+                        newWidth = initialSelectionState.width + deltaX;
+                        if (newWidth < minSize) newWidth = minSize;
+                        break;
+                    case 'resize-nw':
+                        newX = initialSelectionState.x + deltaX;
+                        newY = initialSelectionState.y + deltaY;
+                        newWidth = initialSelectionState.width - deltaX;
+                        newHeight = initialSelectionState.height - deltaY;
+                        if (newWidth < minSize) {
+                            newWidth = minSize;
+                            newX = initialSelectionState.x + initialSelectionState.width - minSize;
+                        }
+                        if (newHeight < minSize) {
+                            newHeight = minSize;
+                            newY = initialSelectionState.y + initialSelectionState.height - minSize;
+                        }
+                        break;
+                    case 'resize-ne':
+                        newY = initialSelectionState.y + deltaY;
+                        newWidth = initialSelectionState.width + deltaX;
+                        newHeight = initialSelectionState.height - deltaY;
+                        if (newWidth < minSize) newWidth = minSize;
+                        if (newHeight < minSize) {
+                            newHeight = minSize;
+                            newY = initialSelectionState.y + initialSelectionState.height - minSize;
+                        }
+                        break;
+                    case 'resize-sw':
+                        newX = initialSelectionState.x + deltaX;
+                        newWidth = initialSelectionState.width - deltaX;
+                        newHeight = initialSelectionState.height + deltaY;
+                        if (newWidth < minSize) {
+                            newWidth = minSize;
+                            newX = initialSelectionState.x + initialSelectionState.width - minSize;
+                        }
+                        if (newHeight < minSize) newHeight = minSize;
+                        break;
+                    case 'resize-se':
+                        newWidth = initialSelectionState.width + deltaX;
+                        newHeight = initialSelectionState.height + deltaY;
+                        if (newWidth < minSize) newWidth = minSize;
+                        if (newHeight < minSize) newHeight = minSize;
+                        break;
+                }
+
+                // 边界检查
+                if (newX < 0) {
+                    newWidth += newX;
+                    newX = 0;
+                }
+                if (newY < 0) {
+                    newHeight += newY;
+                    newY = 0;
+                }
+                if (newX + newWidth > videoDisplayWidth) {
+                    newWidth = videoDisplayWidth - newX;
+                }
+                if (newY + newHeight > videoDisplayHeight) {
+                    newHeight = videoDisplayHeight - newY;
+                }
+
+                // 确保最小尺寸
+                if (newWidth < minSize) newWidth = minSize;
+                if (newHeight < minSize) newHeight = minSize;
+
+                lastSelection.x = newX;
+                lastSelection.y = newY;
+                lastSelection.width = newWidth;
+                lastSelection.height = newHeight;
+            }
+
+            // 根据选区更新滑块 - 只在需要时更新
+            function updateSlidersFromSelection() {
+                widthSlider.value = lastSelection.width;
+                heightSlider.value = lastSelection.height;
+                xSlider.value = lastSelection.x;
+                ySlider.value = lastSelection.y;
+                
+                widthValue.textContent = lastSelection.width;
+                heightValue.textContent = lastSelection.height;
+                xValue.textContent = lastSelection.x;
+                yValue.textContent = lastSelection.y;
+            }
 
             // 更新帧数时间信息
             function updateFrameTimeInfo() {
@@ -424,7 +688,6 @@
                 frameTimeInfo.textContent = `(约 ${seconds} 秒)`;
             }
 
-            // 帧数输入变化监听
             frameStepInput.addEventListener('input', updateFrameTimeInfo);
             frameStepInput.addEventListener('change', function() {
                 let value = parseInt(this.value);
@@ -435,7 +698,6 @@
 
             // 键盘控制功能
             document.addEventListener('keydown', function(e) {
-                // 只在视频加载后且焦点不在输入框时响应
                 if (!videoPlayer.src || document.activeElement.tagName === 'INPUT') {
                     return;
                 }
@@ -456,25 +718,28 @@
                         break;
                     case ' ':
                         e.preventDefault();
-                        if (lastSelection) {
-                            captureScreenshot();
-                            showKeyboardFeedback('📸 截图成功！');
+                        ensureSelectionState();
+                        captureScreenshot();
+                        showKeyboardFeedback('📸 截图成功！');
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (screenshots.length > 0) {
+                            downloadCombinedImage();
+                            showKeyboardFeedback('💾 开始下载拼接图片...');
                         } else {
-                            showKeyboardFeedback('❌ 请先选择截图区域');
+                            showKeyboardFeedback('❌ 没有可下载的截图');
                         }
                         break;
                 }
             });
 
-            // 显示键盘操作反馈
             function showKeyboardFeedback(message) {
-                // 移除已有的反馈
                 const existingFeedback = document.querySelector('.keyboard-feedback');
                 if (existingFeedback) {
                     existingFeedback.remove();
                 }
 
-                // 创建新的反馈
                 const feedback = document.createElement('div');
                 feedback.className = 'keyboard-feedback';
                 feedback.textContent = message;
@@ -493,7 +758,6 @@
                     animation: fadeOut 1s ease-in-out 0.5s forwards;
                 `;
 
-                // 添加淡出动画
                 const style = document.createElement('style');
                 style.textContent = `
                     @keyframes fadeOut {
@@ -502,17 +766,11 @@
                     }
                 `;
                 document.head.appendChild(style);
-
                 document.body.appendChild(feedback);
 
-                // 1.5秒后移除反馈
                 setTimeout(() => {
-                    if (feedback.parentNode) {
-                        feedback.remove();
-                    }
-                    if (style.parentNode) {
-                        style.remove();
-                    }
+                    if (feedback.parentNode) feedback.remove();
+                    if (style.parentNode) style.remove();
                 }, 1500);
             }
 
@@ -523,21 +781,18 @@
                     const url = URL.createObjectURL(file);
                     videoPlayer.src = url;
                     
-                    // 视频加载后尝试获取帧率
                     videoPlayer.addEventListener('loadedmetadata', function() {
-                        // 尝试估算帧率（大多数视频是30fps）
                         videoFrameRate = 30;
                         updateFrameTimeInfo();
                         
-                        // 获取视频实际显示尺寸
                         const displayRect = videoPlayer.getBoundingClientRect();
                         videoDisplayWidth = Math.floor(displayRect.width);
                         videoDisplayHeight = Math.floor(displayRect.height);
                         
-                        // 更新滑块最大值
                         updateSliderMaxValues();
+                        initializeSelection();
                         
-                        status.textContent = `视频已加载，帧率估算: ${videoFrameRate}fps，每次按键跳转${frameStepInput.value}帧，空格键快速截图`;
+                        status.textContent = `视频已加载，使用空格键截图，回车键下载`;
                     });
                     
                     captureBtn.disabled = false;
@@ -546,7 +801,6 @@
                 }
             });
 
-            // 更新滑块最大值
             function updateSliderMaxValues() {
                 widthSlider.max = videoDisplayWidth;
                 heightSlider.max = videoDisplayHeight;
@@ -554,100 +808,33 @@
                 ySlider.max = videoDisplayHeight;
             }
 
-            // 选择区域功能
-            selectionOverlay.addEventListener('mousedown', function(e) {
-                isSelecting = true;
-                startX = e.offsetX;
-                startY = e.offsetY;
-                
-                // 移除之前的选区
-                if (currentSelection) {
-                    currentSelection.remove();
-                }
-                
-                // 创建新选区
-                currentSelection = document.createElement('div');
-                currentSelection.className = 'selection-box';
-                currentSelection.style.left = startX + 'px';
-                currentSelection.style.top = startY + 'px';
-                currentSelection.style.width = '0px';
-                currentSelection.style.height = '0px';
-                selectionOverlay.appendChild(currentSelection);
+            // 滑块事件监听
+            widthSlider.addEventListener('input', function() {
+                widthValue.textContent = this.value;
+                updateSelectionFromSliders();
             });
 
-            selectionOverlay.addEventListener('mousemove', function(e) {
-                if (!isSelecting || !currentSelection) return;
-                
-                let currentX = e.offsetX;
-                let currentY = e.offsetY;
-                
-                // 限制坐标在视频区域内
-                currentX = Math.max(0, Math.min(currentX, videoDisplayWidth));
-                currentY = Math.max(0, Math.min(currentY, videoDisplayHeight));
-                
-                const width = Math.abs(currentX - startX);
-                const height = Math.abs(currentY - startY);
-                
-                const left = Math.min(currentX, startX);
-                const top = Math.min(currentY, startY);
-                
-                currentSelection.style.left = left + 'px';
-                currentSelection.style.top = top + 'px';
-                currentSelection.style.width = width + 'px';
-                currentSelection.style.height = height + 'px';
-
-                // 更新滑块值
-                updateSlidersFromSelection(left, top, width, height);
+            heightSlider.addEventListener('input', function() {
+                heightValue.textContent = this.value;
+                updateSelectionFromSliders();
             });
 
-            selectionOverlay.addEventListener('mouseup', function() {
-                if (!isSelecting) return;
-                isSelecting = false;
-                
-                if (currentSelection) {
-                    const width = parseInt(currentSelection.style.width);
-                    const height = parseInt(currentSelection.style.height);
-                    
-                    if (width > 10 && height > 10) {
-                        lastSelection = {
-                            element: currentSelection,
-                            x: parseInt(currentSelection.style.left),
-                            y: parseInt(currentSelection.style.top),
-                            width: width,
-                            height: height
-                        };
-                        status.textContent = `区域选择完成，可以截图了（可使用←→方向键微调位置，当前跳转${frameStepInput.value}帧，空格键快速截图）`;
-                    }
-                }
+            xSlider.addEventListener('input', function() {
+                xValue.textContent = this.value;
+                updateSelectionFromSliders();
             });
 
-            // 根据选区更新滑块值
-            function updateSlidersFromSelection(x, y, width, height) {
-                widthSlider.value = width;
-                heightSlider.value = height;
-                xSlider.value = x;
-                ySlider.value = y;
-                
-                widthValue.textContent = width;
-                heightValue.textContent = height;
-                xValue.textContent = x;
-                yValue.textContent = y;
-            }
+            ySlider.addEventListener('input', function() {
+                yValue.textContent = this.value;
+                updateSelectionFromSliders();
+            });
 
-            // 滑块控制选区
-            function createSelectionFromSliders() {
-                if (!currentSelection) {
-                    currentSelection = document.createElement('div');
-                    currentSelection.className = 'selection-box';
-                    selectionOverlay.appendChild(currentSelection);
-                }
-                
+            function updateSelectionFromSliders() {
                 let width = parseInt(widthSlider.value);
                 let height = parseInt(heightSlider.value);
                 let x = parseInt(xSlider.value);
                 let y = parseInt(ySlider.value);
                 
-                // 确保选区不会超出视频边界
                 if (x + width > videoDisplayWidth) {
                     width = videoDisplayWidth - x;
                     widthSlider.value = width;
@@ -660,111 +847,121 @@
                     heightValue.textContent = height;
                 }
                 
-                currentSelection.style.left = x + 'px';
-                currentSelection.style.top = y + 'px';
-                currentSelection.style.width = width + 'px';
-                currentSelection.style.height = height + 'px';
-                
                 lastSelection = {
-                    element: currentSelection,
                     x: x,
                     y: y,
                     width: width,
                     height: height
                 };
+                
+                updateSelectionDisplay();
             }
 
-            // 滑块事件监听
-            widthSlider.addEventListener('input', function() {
-                widthValue.textContent = this.value;
-                createSelectionFromSliders();
-            });
-
-            heightSlider.addEventListener('input', function() {
-                heightValue.textContent = this.value;
-                createSelectionFromSliders();
-            });
-
-            xSlider.addEventListener('input', function() {
-                xValue.textContent = this.value;
-                createSelectionFromSliders();
-            });
-
-            ySlider.addEventListener('input', function() {
-                yValue.textContent = this.value;
-                createSelectionFromSliders();
-            });
+            function ensureSelectionState() {
+                if (!lastSelection) {
+                    lastSelection = {
+                        x: parseInt(xSlider.value),
+                        y: parseInt(ySlider.value),
+                        width: parseInt(widthSlider.value),
+                        height: parseInt(heightSlider.value)
+                    };
+                }
+                updateSelectionDisplay();
+            }
 
             // 截图功能
             function captureScreenshot() {
-                if (!lastSelection) {
-                    status.textContent = '请先选择区域';
-                    return;
-                }
+                ensureSelectionState();
 
-                // 暂停视频以确保截图准确
                 const wasPlaying = !videoPlayer.paused;
                 videoPlayer.pause();
 
-                // 获取视频的实际显示尺寸和原始尺寸
                 const displayRect = videoPlayer.getBoundingClientRect();
                 const videoRect = {
                     width: videoPlayer.videoWidth,
                     height: videoPlayer.videoHeight
                 };
 
-                // 计算缩放比例
                 const scaleX = videoRect.width / displayRect.width;
                 const scaleY = videoRect.height / displayRect.height;
 
-                // 转换坐标到视频原始尺寸
                 const sourceX = lastSelection.x * scaleX;
                 const sourceY = lastSelection.y * scaleY;
                 const sourceWidth = lastSelection.width * scaleX;
                 const sourceHeight = lastSelection.height * scaleY;
 
-                // 创建canvas进行截图
                 const canvas = document.createElement('canvas');
                 canvas.width = sourceWidth;
                 canvas.height = sourceHeight;
                 const ctx = canvas.getContext('2d');
 
-                // 绘制选定区域
                 ctx.drawImage(
                     videoPlayer,
                     sourceX, sourceY, sourceWidth, sourceHeight,
                     0, 0, sourceWidth, sourceHeight
                 );
 
-                // 添加到截图列表
                 const dataURL = canvas.toDataURL('image/png');
                 const screenshot = {
                     dataURL: dataURL,
                     width: sourceWidth,
                     height: sourceHeight,
                     timestamp: videoPlayer.currentTime,
-                    id: Date.now() + Math.random() // 唯一标识
+                    id: Date.now() + Math.random()
                 };
 
                 screenshots.push(screenshot);
-
-                // 更新预览
                 updatePreview();
 
-                status.textContent = `截图成功！已捕获 ${screenshots.length} 张截图（可使用←→方向键继续调整，当前跳转${frameStepInput.value}帧，空格键快速截图）`;
+                status.textContent = `截图成功！已捕获 ${screenshots.length} 张截图`;
                 downloadBtn.disabled = false;
                 clearAllBtn.disabled = false;
 
-                // 恢复播放状态
                 if (wasPlaying) {
-                    setTimeout(() => {
-                        videoPlayer.play();
-                    }, 100);
+                    setTimeout(() => videoPlayer.play(), 100);
                 }
             }
 
-            // 按钮点击截图
             captureBtn.addEventListener('click', captureScreenshot);
+
+            // 下载拼接图片
+            function downloadCombinedImage() {
+                if (screenshots.length === 0) return;
+
+                let totalHeight = 0;
+                let maxWidth = 0;
+                screenshots.forEach(screenshot => {
+                    totalHeight += screenshot.height;
+                    if (screenshot.width > maxWidth) maxWidth = screenshot.width;
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = maxWidth;
+                canvas.height = totalHeight;
+                const ctx = canvas.getContext('2d');
+
+                let y = 0;
+                let imagesLoaded = 0;
+
+                screenshots.forEach(screenshot => {
+                    const img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, y, screenshot.width, screenshot.height);
+                        y += screenshot.height;
+                        imagesLoaded++;
+                        
+                        if (imagesLoaded === screenshots.length) {
+                            const link = document.createElement('a');
+                            link.download = `screenshot-combined-${new Date().getTime()}.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }
+                    };
+                    img.src = screenshot.dataURL;
+                });
+            }
+
+            downloadBtn.addEventListener('click', downloadCombinedImage);
 
             // 清除选区
             clearSelectionBtn.addEventListener('click', function() {
@@ -774,20 +971,18 @@
                 }
                 lastSelection = null;
                 
-                // 重置滑块值
-                widthSlider.value = 0;
-                heightSlider.value = 0;
+                widthSlider.value = 200;
+                heightSlider.value = 150;
                 xSlider.value = 0;
                 ySlider.value = 0;
-                widthValue.textContent = '0';
-                heightValue.textContent = '0';
+                widthValue.textContent = '200';
+                heightValue.textContent = '150';
                 xValue.textContent = '0';
                 yValue.textContent = '0';
                 
                 status.textContent = '选区已清除';
             });
 
-            // 清空所有截图
             clearAllBtn.addEventListener('click', function() {
                 if (screenshots.length === 0) {
                     status.textContent = '没有可清空的截图';
@@ -801,7 +996,6 @@
                 status.textContent = '所有截图已清空';
             });
 
-            // 更新预览
             function updatePreview() {
                 screenshotPreview.innerHTML = '';
                 
@@ -836,11 +1030,9 @@
                     screenshotPreview.appendChild(item);
                 });
 
-                // 添加拖拽事件监听
                 addDragAndDropListeners();
             }
 
-            // 删除单个截图
             function deleteScreenshot(id) {
                 screenshots = screenshots.filter(screenshot => screenshot.id !== id);
                 updatePreview();
@@ -875,9 +1067,7 @@
             }
 
             function handleDragOver(e) {
-                if (e.preventDefault) {
-                    e.preventDefault();
-                }
+                if (e.preventDefault) e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 return false;
             }
@@ -891,15 +1081,12 @@
             }
 
             function handleDrop(e) {
-                if (e.stopPropagation) {
-                    e.stopPropagation();
-                }
+                if (e.stopPropagation) e.stopPropagation();
                 
                 if (dragSrcElement !== this) {
                     const fromIndex = parseInt(dragSrcElement.dataset.index);
                     const toIndex = parseInt(this.dataset.index);
                     
-                    // 重新排序数组
                     const [movedItem] = screenshots.splice(fromIndex, 1);
                     screenshots.splice(toIndex, 0, movedItem);
                     
@@ -917,46 +1104,6 @@
                     item.classList.remove('dragging');
                 });
             }
-
-            // 下载拼接图
-            downloadBtn.addEventListener('click', function() {
-                if (screenshots.length === 0) return;
-
-                // 计算总高度和最大宽度
-                let totalHeight = 0;
-                let maxWidth = 0;
-                screenshots.forEach(screenshot => {
-                    totalHeight += screenshot.height;
-                    if (screenshot.width > maxWidth) {
-                        maxWidth = screenshot.width;
-                    }
-                });
-
-                // 创建拼接canvas
-                const canvas = document.createElement('canvas');
-                canvas.width = maxWidth;
-                canvas.height = totalHeight;
-                const ctx = canvas.getContext('2d');
-
-                // 绘制所有截图
-                let y = 0;
-                screenshots.forEach(screenshot => {
-                    const img = new Image();
-                    img.onload = function() {
-                        ctx.drawImage(img, 0, y, screenshot.width, screenshot.height);
-                        y += screenshot.height;
-                        
-                        // 最后一张图片绘制完成后下载
-                        if (y >= totalHeight) {
-                            const link = document.createElement('a');
-                            link.download = 'screenshot-combined.png';
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                        }
-                    };
-                    img.src = screenshot.dataURL;
-                });
-            });
 
             // 进度条功能
             videoPlayer.addEventListener('loadedmetadata', function() {
@@ -989,9 +1136,7 @@
             });
 
             document.addEventListener('mousemove', function(e) {
-                if (isDraggingProgress) {
-                    updateProgress(e);
-                }
+                if (isDraggingProgress) updateProgress(e);
             });
 
             document.addEventListener('mouseup', function() {
@@ -1009,7 +1154,6 @@
                 }
             }
 
-            // 格式化时间
             function formatTime(seconds) {
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
