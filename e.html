@@ -33,23 +33,61 @@
             margin-bottom: 15px;
             font-size: 14px;
         }
-        .frame-control {
-            text-align: center;
+        .frame-control-groups {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
             margin-bottom: 15px;
-            padding: 10px;
+            flex-wrap: wrap;
+        }
+        .frame-group {
+            display: flex;
+            align-items: center;
             background: #f8f9fa;
+            padding: 8px 12px;
             border-radius: 5px;
+            border: 1px solid #dee2e6;
         }
-        .frame-control label {
-            margin-right: 10px;
+        .frame-group label {
+            margin-right: 8px;
             font-weight: bold;
+            font-size: 14px;
+            color: #333;
         }
-        .frame-control input {
-            width: 80px;
-            padding: 5px;
+        .frame-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .frame-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .frame-btn:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+        .frame-btn:disabled {
+            background: #6c757d;
+            border-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .frame-input {
+            width: 50px;
+            padding: 4px;
             border: 1px solid #ddd;
             border-radius: 3px;
             text-align: center;
+            font-size: 12px;
         }
         .main-content {
             display: flex;
@@ -297,12 +335,42 @@
 <body>
     <div class="container">
         <h1>视频截图工具</h1>
-        <div class="keyboard-hint">💡 提示：空格键截图 | 回车键下载 | ←→方向键控制视频 | 鼠标拖动调整选区</div>
+        <div class="keyboard-hint">💡 提示：空格键截图 | 回车键下载 | ←→方向键控制视频(使用第1组帧数) | 鼠标拖动调整选区</div>
         
-        <div class="frame-control">
-            <label for="frameStep">每次按键跳转帧数：</label>
-            <input type="number" id="frameStep" min="1" max="100" value="30">
-            <span id="frameTimeInfo">(约 1.00 秒)</span>
+        <!-- 新增的四组帧数控制按钮 -->
+        <div class="frame-control-groups">
+            <div class="frame-group">
+                <label>精确控制:</label>
+                <div class="frame-controls">
+                    <button class="frame-btn" id="back1Btn" title="后退帧数">←</button>
+                    <input type="number" class="frame-input" id="frameInput1" min="1" max="100" value="1">
+                    <button class="frame-btn" id="forward1Btn" title="前进帧数">→</button>
+                </div>
+            </div>
+            <div class="frame-group">
+                <label>5帧步进:</label>
+                <div class="frame-controls">
+                    <button class="frame-btn" id="back5Btn" title="后退帧数">←</button>
+                    <input type="number" class="frame-input" id="frameInput5" min="1" max="100" value="5">
+                    <button class="frame-btn" id="forward5Btn" title="前进帧数">→</button>
+                </div>
+            </div>
+            <div class="frame-group">
+                <label>10帧步进:</label>
+                <div class="frame-controls">
+                    <button class="frame-btn" id="back10Btn" title="后退帧数">←</button>
+                    <input type="number" class="frame-input" id="frameInput10" min="1" max="100" value="10">
+                    <button class="frame-btn" id="forward10Btn" title="前进帧数">→</button>
+                </div>
+            </div>
+            <div class="frame-group">
+                <label>30帧步进:</label>
+                <div class="frame-controls">
+                    <button class="frame-btn" id="back30Btn" title="后退帧数">←</button>
+                    <input type="number" class="frame-input" id="frameInput30" min="1" max="100" value="30">
+                    <button class="frame-btn" id="forward30Btn" title="前进帧数">→</button>
+                </div>
+            </div>
         </div>
         
         <div class="main-content">
@@ -392,8 +460,6 @@
             const customProgressThumb = document.getElementById('customProgressThumb');
             const currentTimeEl = document.getElementById('currentTime');
             const durationEl = document.getElementById('duration');
-            const frameStepInput = document.getElementById('frameStep');
-            const frameTimeInfo = document.getElementById('frameTimeInfo');
 
             // 滑块控制元素
             const widthSlider = document.getElementById('widthSlider');
@@ -404,6 +470,20 @@
             const heightValue = document.getElementById('heightValue');
             const xValue = document.getElementById('xValue');
             const yValue = document.getElementById('yValue');
+
+            // 新增的帧数控制元素
+            const back1Btn = document.getElementById('back1Btn');
+            const forward1Btn = document.getElementById('forward1Btn');
+            const frameInput1 = document.getElementById('frameInput1');
+            const back5Btn = document.getElementById('back5Btn');
+            const forward5Btn = document.getElementById('forward5Btn');
+            const frameInput5 = document.getElementById('frameInput5');
+            const back10Btn = document.getElementById('back10Btn');
+            const forward10Btn = document.getElementById('forward10Btn');
+            const frameInput10 = document.getElementById('frameInput10');
+            const back30Btn = document.getElementById('back30Btn');
+            const forward30Btn = document.getElementById('forward30Btn');
+            const frameInput30 = document.getElementById('frameInput30');
 
             let currentSelection = null;
             let lastSelection = {
@@ -419,14 +499,14 @@
             let videoDisplayWidth = 800;
             let videoDisplayHeight = 450;
 
-            // 选区交互状态 - 简化版本
+            // 选区交互状态
             let isDraggingSelection = false;
             let dragStartX = 0;
             let dragStartY = 0;
             let initialSelectionState = null;
-            let currentAction = null; // 'move', 'resize-n', 'resize-s', etc.
+            let currentAction = null;
 
-            // 初始化选区 - 简化版本
+            // 初始化选区
             function initializeSelection() {
                 if (!currentSelection) {
                     currentSelection = document.createElement('div');
@@ -436,7 +516,7 @@
                 updateSelectionDisplay();
             }
 
-            // 更新选区显示 - 简化版本
+            // 更新选区显示
             function updateSelectionDisplay() {
                 if (!currentSelection) return;
                 
@@ -446,22 +526,19 @@
                 currentSelection.style.height = lastSelection.height + 'px';
             }
 
-            // 获取鼠标在选区中的位置 - 简化版本
+            // 获取鼠标在选区中的位置
             function getMouseAction(mouseX, mouseY) {
                 const rect = lastSelection;
-                const edgeSize = 8; // 边缘检测区域大小
+                const edgeSize = 8;
                 
-                // 检查是否在边缘区域
                 const inLeftEdge = mouseX >= rect.x - edgeSize && mouseX <= rect.x + edgeSize;
                 const inRightEdge = mouseX >= rect.x + rect.width - edgeSize && mouseX <= rect.x + rect.width + edgeSize;
                 const inTopEdge = mouseY >= rect.y - edgeSize && mouseY <= rect.y + edgeSize;
                 const inBottomEdge = mouseY >= rect.y + rect.height - edgeSize && mouseY <= rect.y + rect.height + edgeSize;
                 
-                // 检查是否在选区内部
                 const inSelection = mouseX >= rect.x && mouseX <= rect.x + rect.width &&
                                   mouseY >= rect.y && mouseY <= rect.y + rect.height;
 
-                // 确定操作类型
                 if (inTopEdge && inLeftEdge) return 'resize-nw';
                 if (inTopEdge && inRightEdge) return 'resize-ne';
                 if (inBottomEdge && inLeftEdge) return 'resize-sw';
@@ -475,7 +552,7 @@
                 return 'outside';
             }
 
-            // 更新光标样式 - 简化版本
+            // 更新光标样式
             function updateCursorStyle(mouseX, mouseY) {
                 const action = getMouseAction(mouseX, mouseY);
                 
@@ -504,7 +581,7 @@
                 }
             }
 
-            // 选区鼠标事件 - 简化版本
+            // 选区鼠标事件
             selectionOverlay.addEventListener('mousedown', function(e) {
                 const mouseX = e.offsetX;
                 const mouseY = e.offsetY;
@@ -526,29 +603,24 @@
                 const mouseX = e.offsetX;
                 const mouseY = e.offsetY;
                 
-                // 更新光标样式
                 if (!isDraggingSelection) {
                     updateCursorStyle(mouseX, mouseY);
                 }
                 
-                // 处理拖动
                 if (isDraggingSelection) {
                     const deltaX = mouseX - dragStartX;
                     const deltaY = mouseY - dragStartY;
                     
                     if (currentAction === 'move') {
-                        // 移动整个选区
                         let newX = initialSelectionState.x + deltaX;
                         let newY = initialSelectionState.y + deltaY;
                         
-                        // 边界检查
                         newX = Math.max(0, Math.min(newX, videoDisplayWidth - lastSelection.width));
                         newY = Math.max(0, Math.min(newY, videoDisplayHeight - lastSelection.height));
                         
                         lastSelection.x = newX;
                         lastSelection.y = newY;
                     } else {
-                        // 调整尺寸
                         adjustSelectionSize(deltaX, deltaY);
                     }
                     
@@ -561,13 +633,11 @@
                     isDraggingSelection = false;
                     currentAction = null;
                     initialSelectionState = null;
-                    
-                    // 拖动结束后更新滑块
                     updateSlidersFromSelection();
                 }
             });
 
-            // 调整选区尺寸 - 简化版本
+            // 调整选区尺寸
             function adjustSelectionSize(deltaX, deltaY) {
                 const minSize = 20;
                 let newX = initialSelectionState.x;
@@ -642,7 +712,6 @@
                         break;
                 }
 
-                // 边界检查
                 if (newX < 0) {
                     newWidth += newX;
                     newX = 0;
@@ -658,7 +727,6 @@
                     newHeight = videoDisplayHeight - newY;
                 }
 
-                // 确保最小尺寸
                 if (newWidth < minSize) newWidth = minSize;
                 if (newHeight < minSize) newHeight = minSize;
 
@@ -668,7 +736,7 @@
                 lastSelection.height = newHeight;
             }
 
-            // 根据选区更新滑块 - 只在需要时更新
+            // 根据选区更新滑块
             function updateSlidersFromSelection() {
                 widthSlider.value = lastSelection.width;
                 heightSlider.value = lastSelection.height;
@@ -681,20 +749,49 @@
                 yValue.textContent = lastSelection.y;
             }
 
-            // 更新帧数时间信息
-            function updateFrameTimeInfo() {
-                const frames = parseInt(frameStepInput.value) || 10;
-                const seconds = (frames / videoFrameRate).toFixed(2);
-                frameTimeInfo.textContent = `(约 ${seconds} 秒)`;
+            // 帧数控制功能
+            function setupFrameControls() {
+                // 第1组控制
+                back1Btn.addEventListener('click', () => moveFrames(-getFrameCount(frameInput1)));
+                forward1Btn.addEventListener('click', () => moveFrames(getFrameCount(frameInput1)));
+                
+                // 第2组控制
+                back5Btn.addEventListener('click', () => moveFrames(-getFrameCount(frameInput5)));
+                forward5Btn.addEventListener('click', () => moveFrames(getFrameCount(frameInput5)));
+                
+                // 第3组控制
+                back10Btn.addEventListener('click', () => moveFrames(-getFrameCount(frameInput10)));
+                forward10Btn.addEventListener('click', () => moveFrames(getFrameCount(frameInput10)));
+                
+                // 第4组控制
+                back30Btn.addEventListener('click', () => moveFrames(-getFrameCount(frameInput30)));
+                forward30Btn.addEventListener('click', () => moveFrames(getFrameCount(frameInput30)));
+
+                // 输入框验证
+                [frameInput1, frameInput5, frameInput10, frameInput30].forEach(input => {
+                    input.addEventListener('change', function() {
+                        let value = parseInt(this.value);
+                        if (value < 1) this.value = 1;
+                        if (value > 100) this.value = 100;
+                    });
+                });
             }
 
-            frameStepInput.addEventListener('input', updateFrameTimeInfo);
-            frameStepInput.addEventListener('change', function() {
-                let value = parseInt(this.value);
-                if (value < 1) this.value = 1;
-                if (value > 100) this.value = 100;
-                updateFrameTimeInfo();
-            });
+            function getFrameCount(inputElement) {
+                return parseInt(inputElement.value) || 1;
+            }
+
+            function moveFrames(frameCount) {
+                if (!videoPlayer.src) return;
+                
+                const timeStep = frameCount / videoFrameRate;
+                const newTime = Math.max(0, Math.min(videoPlayer.duration, videoPlayer.currentTime + timeStep));
+                videoPlayer.currentTime = newTime;
+                
+                const direction = frameCount > 0 ? '前进' : '后退';
+                const absFrames = Math.abs(frameCount);
+                showKeyboardFeedback(`${direction}${absFrames}帧 (${timeStep.toFixed(2)}秒)`);
+            }
 
             // 键盘控制功能
             document.addEventListener('keydown', function(e) {
@@ -702,19 +799,14 @@
                     return;
                 }
 
-                const frameStep = parseInt(frameStepInput.value) || 10;
-                const timeStep = frameStep / videoFrameRate;
-                
                 switch(e.key) {
                     case 'ArrowLeft':
                         e.preventDefault();
-                        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - timeStep);
-                        showKeyboardFeedback(`← 后退${frameStep}帧 (${timeStep.toFixed(2)}秒)`);
+                        moveFrames(-getFrameCount(frameInput1)); // 使用第1组设置
                         break;
                     case 'ArrowRight':
                         e.preventDefault();
-                        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + timeStep);
-                        showKeyboardFeedback(`→ 前进${frameStep}帧 (${timeStep.toFixed(2)}秒)`);
+                        moveFrames(getFrameCount(frameInput1)); // 使用第1组设置
                         break;
                     case ' ':
                         e.preventDefault();
@@ -783,7 +875,6 @@
                     
                     videoPlayer.addEventListener('loadedmetadata', function() {
                         videoFrameRate = 30;
-                        updateFrameTimeInfo();
                         
                         const displayRect = videoPlayer.getBoundingClientRect();
                         videoDisplayWidth = Math.floor(displayRect.width);
@@ -1159,6 +1250,9 @@
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
             }
+
+            // 初始化帧数控制
+            setupFrameControls();
         });
     </script>
 </body>
