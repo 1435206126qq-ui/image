@@ -44,39 +44,6 @@
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     }
 
-    .delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      background: #ff4d4f;
-      color: white;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      font-size: 14px;
-      line-height: 22px;
-      text-align: center;
-      cursor: pointer;
-      display: none;
-    }
-
-    .card:hover .delete-btn {
-      display: block; /* 只在 hover 时显示 */
-    }
-
-    .card h2 {
-      font-size: 20px;
-      color: #333;
-      margin-bottom: 10px;
-    }
-
-    .card p {
-      font-size: 15px;
-      color: #666;
-      margin-bottom: 20px;
-      min-height: 40px;
-    }
-
     .btn {
       display: inline-block;
       background: #0070f3;
@@ -89,6 +56,26 @@
 
     .btn:hover {
       background: #005bb5;
+    }
+
+    .edit-btn, .delete-btn {
+      position: absolute;
+      top: 10px;
+      font-size: 13px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .edit-btn {
+      right: 60px;
+      background: #1890ff;
+    }
+
+    .delete-btn {
+      right: 15px;
+      background: #ff4d4f;
     }
 
     .add-btn {
@@ -122,7 +109,8 @@
   <header>我的网页编辑器合集</header>
 
   <main id="cardContainer">
-    <!-- 原始固定卡片（不可删除） -->
+    
+    <!-- 固定卡片：不可编辑、不可删除 -->
     <div class="card">
       <h2>日常记录</h2>
       <p>功能简介：日常记录</p>
@@ -152,42 +140,36 @@
       <p>功能简介：视频截图合成长图</p>
       <a href="e.html" class="btn">进入工具</a>
     </div>
+
   </main>
 
-  <!-- 新增按钮 -->
   <div class="add-btn" onclick="addCard()">➕ 新增工具卡片</div>
 
   <footer>© 2025 我的工具合集 | 由 Vercel 提供部署支持</footer>
 
   <script>
-    // 页面加载时渲染已保存卡片
+    // 页面加载，渲染保存的卡片
     window.onload = function () {
       const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
       list.forEach((item, index) => renderCard(item, index));
     };
 
-    // 点击新增卡片
+    // 点击新增（不弹输入框）
     function addCard() {
-      const title = prompt("请输入工具名称：");
-      if (!title) return;
+      const newCard = {
+        title: "未命名工具",
+        desc: "点击编辑填写简介",
+        link: "#"
+      };
 
-      const desc = prompt("请输入功能简介：");
-      if (!desc) return;
-
-      const link = prompt("请输入工具链接（如：tool.html）：");
-      if (!link) return;
-
-      const cardData = { title, desc, link };
-
-      // 渲染
       const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
-      list.push(cardData);
+      list.push(newCard);
       localStorage.setItem("extraCards", JSON.stringify(list));
 
-      renderCard(cardData, list.length - 1);
+      renderCard(newCard, list.length - 1);
     }
 
-    // 渲染卡片（含删除按钮）
+    // 渲染新增卡片 + 编辑 + 删除按钮
     function renderCard({ title, desc, link }, index) {
       const container = document.getElementById("cardContainer");
 
@@ -196,7 +178,8 @@
       div.setAttribute("data-index", index);
 
       div.innerHTML = `
-        <div class="delete-btn" onclick="deleteCard(${index})">×</div>
+        <div class="edit-btn" onclick="editCard(${index})">编辑</div>
+        <div class="delete-btn" onclick="deleteCard(${index})">删除</div>
         <h2>${title}</h2>
         <p>${desc}</p>
         <a href="${link}" class="btn">进入工具</a>
@@ -205,18 +188,37 @@
       container.appendChild(div);
     }
 
+    // 编辑卡片内容
+    function editCard(index) {
+      let list = JSON.parse(localStorage.getItem("extraCards") || "[]");
+      let item = list[index];
+
+      const newTitle = prompt("请输入标题：", item.title);
+      if (newTitle === null) return;
+
+      const newDesc = prompt("请输入简介：", item.desc);
+      if (newDesc === null) return;
+
+      const newLink = prompt("请输入链接：例如 tool.html", item.link);
+      if (newLink === null) return;
+
+      list[index] = { title: newTitle, desc: newDesc, link: newLink };
+      localStorage.setItem("extraCards", JSON.stringify(list));
+
+      location.reload(); // 最安全的刷新方式
+    }
+
     // 删除卡片
     function deleteCard(index) {
-      if (!confirm("确定删除该卡片？")) return;
+      if (!confirm("确认删除该卡片？")) return;
 
-      // 删除 localStorage 的对应项
       let list = JSON.parse(localStorage.getItem("extraCards") || "[]");
       list.splice(index, 1);
       localStorage.setItem("extraCards", JSON.stringify(list));
 
-      // 重新渲染页面（最安全，不留 bug）
       location.reload();
     }
   </script>
+
 </body>
 </html>
