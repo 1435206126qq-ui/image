@@ -36,11 +36,32 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       padding: 25px;
       transition: all 0.3s ease;
+      position: relative;
     }
 
     .card:hover {
       transform: translateY(-5px);
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #ff4d4f;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 14px;
+      line-height: 22px;
+      text-align: center;
+      cursor: pointer;
+      display: none;
+    }
+
+    .card:hover .delete-btn {
+      display: block; /* 只在 hover 时显示 */
     }
 
     .card h2 {
@@ -101,7 +122,7 @@
   <header>我的网页编辑器合集</header>
 
   <main id="cardContainer">
-    <!-- 原有五个固定卡片 -->
+    <!-- 原始固定卡片（不可删除） -->
     <div class="card">
       <h2>日常记录</h2>
       <p>功能简介：日常记录</p>
@@ -139,13 +160,13 @@
   <footer>© 2025 我的工具合集 | 由 Vercel 提供部署支持</footer>
 
   <script>
-    // 加载历史卡片
+    // 页面加载时渲染已保存卡片
     window.onload = function () {
       const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
-      list.forEach(item => renderCard(item));
+      list.forEach((item, index) => renderCard(item, index));
     };
 
-    // 新增卡片按钮触发
+    // 点击新增卡片
     function addCard() {
       const title = prompt("请输入工具名称：");
       if (!title) return;
@@ -158,27 +179,43 @@
 
       const cardData = { title, desc, link };
 
-      renderCard(cardData);
-
-      // 保存到本地
+      // 渲染
       const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
       list.push(cardData);
       localStorage.setItem("extraCards", JSON.stringify(list));
+
+      renderCard(cardData, list.length - 1);
     }
 
-    // 渲染到页面
-    function renderCard({ title, desc, link }) {
+    // 渲染卡片（含删除按钮）
+    function renderCard({ title, desc, link }, index) {
       const container = document.getElementById("cardContainer");
 
       const div = document.createElement("div");
       div.className = "card";
+      div.setAttribute("data-index", index);
+
       div.innerHTML = `
+        <div class="delete-btn" onclick="deleteCard(${index})">×</div>
         <h2>${title}</h2>
         <p>${desc}</p>
         <a href="${link}" class="btn">进入工具</a>
       `;
 
       container.appendChild(div);
+    }
+
+    // 删除卡片
+    function deleteCard(index) {
+      if (!confirm("确定删除该卡片？")) return;
+
+      // 删除 localStorage 的对应项
+      let list = JSON.parse(localStorage.getItem("extraCards") || "[]");
+      list.splice(index, 1);
+      localStorage.setItem("extraCards", JSON.stringify(list));
+
+      // 重新渲染页面（最安全，不留 bug）
+      location.reload();
     }
   </script>
 </body>
