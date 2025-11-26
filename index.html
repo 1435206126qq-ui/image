@@ -70,6 +70,25 @@
       background: #005bb5;
     }
 
+    .add-btn {
+      background: #28a745;
+      margin: 40px auto 0;
+      display: block;
+      width: 200px;
+      text-align: center;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: 0.3s;
+    }
+
+    .add-btn:hover {
+      background: #1f8a38;
+    }
+
     footer {
       text-align: center;
       color: #888;
@@ -81,7 +100,8 @@
 <body>
   <header>我的网页编辑器合集</header>
 
-  <main>
+  <main id="cardContainer">
+    <!-- 原有五个固定卡片 -->
     <div class="card">
       <h2>日常记录</h2>
       <p>功能简介：日常记录</p>
@@ -113,6 +133,53 @@
     </div>
   </main>
 
+  <!-- 新增按钮 -->
+  <div class="add-btn" onclick="addCard()">➕ 新增工具卡片</div>
+
   <footer>© 2025 我的工具合集 | 由 Vercel 提供部署支持</footer>
+
+  <script>
+    // 加载历史卡片
+    window.onload = function () {
+      const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
+      list.forEach(item => renderCard(item));
+    };
+
+    // 新增卡片按钮触发
+    function addCard() {
+      const title = prompt("请输入工具名称：");
+      if (!title) return;
+
+      const desc = prompt("请输入功能简介：");
+      if (!desc) return;
+
+      const link = prompt("请输入工具链接（如：tool.html）：");
+      if (!link) return;
+
+      const cardData = { title, desc, link };
+
+      renderCard(cardData);
+
+      // 保存到本地
+      const list = JSON.parse(localStorage.getItem("extraCards") || "[]");
+      list.push(cardData);
+      localStorage.setItem("extraCards", JSON.stringify(list));
+    }
+
+    // 渲染到页面
+    function renderCard({ title, desc, link }) {
+      const container = document.getElementById("cardContainer");
+
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <h2>${title}</h2>
+        <p>${desc}</p>
+        <a href="${link}" class="btn">进入工具</a>
+      `;
+
+      container.appendChild(div);
+    }
+  </script>
 </body>
 </html>
