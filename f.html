@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简笔笑画制作器 - V20 专业排版版</title>
+    <title>简笔笑画制作器 - V30 终极排版版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #07c160; --warning: #ff9c00; --gray: #f2f2f2; --blue: #1890ff; --dark: #333; }
@@ -58,15 +58,17 @@
         .main { flex: 1; background: var(--gray); display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: 40px; position: relative; }
         #canvas { 
             background: white; width: 100%; max-width: 600px; 
-            min-height: 400px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            /* 修改1：去掉 min-height，由内容自动撑开，解决底部留白问题 */
             height: fit-content; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
             position: relative;
-            padding-bottom: 40px;
+            padding-bottom: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         /* 行样式 */
-        .row { position: relative; width: 100%; line-height: 0; border: 2px solid transparent; transition: border-color 0.2s; }
+        .row { position: relative; width: 100%; line-height: 0; border: 2px solid transparent; transition: border-color 0.2s; flex-shrink: 0; }
         .row.waiting-insert { border-color: var(--warning); box-shadow: 0 0 10px rgba(255, 156, 0, 0.3); z-index: 10; }
         .row.waiting-insert::after {
             content: "👇 请点击左侧图片库插入";
@@ -91,27 +93,27 @@
         .tool-btn.btn-plus { color: #52c41a; font-size: 20px; }
         .tool-btn.btn-gear { color: #1890ff; font-size: 16px; }
         .tool-btn.btn-text { color: #faad14; font-size: 14px; font-weight: 800; font-family: serif; }
-        
-        /* 激活编辑模式时的按钮状态 */
         .tool-btn.active { background: #1890ff; color: white; }
 
 
-        /* === V20 图片容器核心 === */
+        /* === 图片容器核心 (解决右移压缩问题) === */
         .img-container {
             width: 100%;
             position: relative;
             display: flex;
-            justify-content: center; /* 默认居中 */
+            justify-content: center; 
             align-items: center;
+            overflow: hidden; /* 默认隐藏超出部分，如果想要超出可见，去掉这行 */
         }
         
         .img-wrapper-inner {
             position: relative;
-            display: inline-block; /* 随图片大小变化 */
+            display: inline-block;
             line-height: 0;
-            width: 100%; /* 默认撑满 */
-            /* 关键：使用 margin 来移动，实现“占位跟随” */
-            margin: 0; 
+            width: 100%; 
+            /* 修改3：不再使用 margin 来移动，改用 transform，且防止压缩 */
+            transform-origin: center center;
+            flex-shrink: 0; /* 禁止被压缩 */
             transition: box-shadow 0.2s;
         }
         
@@ -122,14 +124,13 @@
             display: block;
         }
 
-        /* 编辑模式样式 */
         .img-wrapper-inner.editing {
             outline: 2px solid var(--blue);
             cursor: move;
             z-index: 90;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
-        .img-wrapper-inner.editing .img-layer { pointer-events: none; } /* 编辑时图片不响应，让 wrapper 响应 */
+        .img-wrapper-inner.editing .img-layer { pointer-events: none; }
         
         /* 四角手柄 */
         .resize-handle {
@@ -139,7 +140,6 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.2);
         }
         .img-wrapper-inner.editing .resize-handle { display: block; }
-        
         .rh-tl { top: -7px; left: -7px; cursor: nwse-resize; }
         .rh-tr { top: -7px; right: -7px; cursor: nesw-resize; }
         .rh-bl { bottom: -7px; left: -7px; cursor: nesw-resize; }
@@ -157,6 +157,9 @@
             border: 1px dashed transparent;
             line-height: 1.2; 
             border-radius: 4px;
+            /* 允许容器宽度自适应内容 */
+            width: max-content;
+            max-width: 90%;
         }
         .text-box-container.active { outline: 1px solid #1890ff; }
         .blue-dot {
@@ -177,16 +180,23 @@
         }
         .text-del-btn:hover { background: red; transform: scale(1.1); }
         .text-box-container.active .text-del-btn { display: block; }
+        
         .text-line {
             position: relative; 
             white-space: nowrap; 
             margin: 0; padding: 0 4px; min-height: 20px;
-            border: 1px solid transparent; display: block; width: fit-content;
+            border: 1px solid transparent; 
+            display: block; 
+            width: fit-content;
+            /* 居中每行文字 */
+            margin-left: auto; margin-right: auto;
         }
         .text-line:hover { border-color: rgba(0,0,0,0.1); }
         .line-content { display: inline-block; outline: none; user-select: text; cursor: text; }
+        
+        /* 每一行独立的红色调整点 */
         .red-dot {
-            position: absolute; top: 50%; right: -10px; transform: translateY(-50%);
+            position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
             width: 10px; height: 10px; border-radius: 50%;
             background: #ff4d4f; border: 1px solid white;
             cursor: ew-resize; display: none; z-index: 70; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -220,12 +230,13 @@
                 </div>
             </div>
 
-            <div style="font-size:12px; color:#666; margin-bottom:5px;">第二步：粘贴对话 (格式: 男：内容 / 女：内容)</div>
+            <div style="font-size:12px; color:#666; margin-bottom:5px;">第二步：粘贴对话 (自动合并无角色的行)</div>
             <textarea id="scriptInput" placeholder="例如：
 男：今天吃什么？
-女：随便。
-男：那吃火锅吧。
-女：不行，长痘。"></textarea>
+随便。
+女：那吃火锅吧。
+不行。
+长痘。"></textarea>
             <button class="btn btn-blue" onclick="generateFromScript()">🚀 一键生成长图</button>
         </div>
 
@@ -295,7 +306,7 @@
 
 <div class="main">
     <div id="canvas"></div>
-    <div style="height:50px;"></div>
+    <!-- 底部留白已移除，canvas 高度自适应 -->
 </div>
 
 <script>
@@ -321,15 +332,10 @@
 
     // === 全局点击：退出图片编辑模式 ===
     document.addEventListener('mousedown', function(e) {
-        // 点击空白处退出编辑
         const editingWrapper = document.querySelector('.img-wrapper-inner.editing');
         const toolsBar = e.target.closest('.tools');
-        
-        // 如果点击的不是正在编辑的图片内部，也不是工具栏按钮
         if(editingWrapper && !editingWrapper.contains(e.target) && !toolsBar) {
-            // 取消编辑状态
             editingWrapper.classList.remove('editing');
-            // 恢复按钮状态
             const activeBtn = document.querySelector('.tool-btn.active');
             if(activeBtn) activeBtn.classList.remove('active');
         }
@@ -360,20 +366,16 @@
 
     function rebindAllEvents() {
         document.querySelectorAll('.row').forEach(row => {
-            // 重新绑定图片事件
             const imgWrapper = row.querySelector('.img-wrapper-inner');
             const imgContainer = row.querySelector('.img-container');
             if(imgWrapper && imgContainer) bindImageEvents(imgContainer, imgWrapper, row);
 
-            // 重新绑定文字事件
             const container = row.querySelector('.text-box-container');
             if(container) {
                 bindContainerEvents(container);
                 container.querySelectorAll('.text-line').forEach(line => bindLineEvents(line));
             }
         });
-        
-        // 绑定独立文字框
         document.querySelectorAll('#canvas > .text-box-container').forEach(container => {
              bindContainerEvents(container);
              container.querySelectorAll('.text-line').forEach(line => bindLineEvents(line));
@@ -387,9 +389,8 @@
         }
     });
 
-
-    // === 数据库初始化 (保持不变) ===
-    const DB_NAME = "WeChatToolDB_V14"; 
+    // === 数据库初始化 ===
+    const DB_NAME = "WeChatToolDB_V30"; // 升级版本号以防冲突
     let db = null;
     function initDB() {
         try {
@@ -458,7 +459,7 @@
                         document.querySelectorAll('.lib-item').forEach(el => el.classList.remove('selecting'));
                     } else {
                         saveState(); 
-                        addRow(item.data); // V20: 默认只加图片，不加文字
+                        addRow(item.data); 
                     }
                 };
                 grid.appendChild(div);
@@ -528,7 +529,7 @@
         }
     }
 
-    // === 剧本生成 ===
+    // === 剧本生成 (核心修改：支持多行合并到一个框，但行独立) ===
     window.generateFromScript = function() {
         if(!roleImages['男'] || !roleImages['女']) {
             alert("请先设置男主和女主的图片！");
@@ -539,27 +540,56 @@
         saveState(); 
 
         const lines = text.split('\n');
-        let count = 0;
+        
+        // 缓冲器
+        let currentImg = null;
+        let currentLines = []; // 存放当前块的文字行数组
+
+        function flush() {
+            if (currentImg && currentLines.length > 0) {
+                // 将多行文字作为一个数组传给 addRow
+                addRow(currentImg, currentLines); 
+                currentLines = [];
+            }
+        }
+
         lines.forEach(line => {
             line = line.trim();
             if(!line) return;
-            let imgSrc = null;
+
+            // 检测是否是新角色的开始
+            let isRoleStart = false;
+            let nextImg = null;
             let content = "";
+
             if(line.startsWith("男") || line.startsWith("A")) {
-                imgSrc = roleImages['男'];
+                isRoleStart = true;
+                nextImg = roleImages['男'];
                 content = line.replace(/^(男|A)[:：]\s*/i, '');
             } else if (line.startsWith("女") || line.startsWith("B")) {
-                imgSrc = roleImages['女'];
+                isRoleStart = true;
+                nextImg = roleImages['女'];
                 content = line.replace(/^(女|B)[:：]\s*/i, '');
             }
-            if(imgSrc) {
-                if(!content) content = " "; 
-                addRow(imgSrc, content); // 生成剧本时带有文字
-                count++;
+
+            if (isRoleStart) {
+                // 如果是新角色，先结算上一个角色的内容
+                flush();
+                // 开始新角色
+                currentImg = nextImg;
+                if (content) currentLines.push(content);
+            } else {
+                // 不是新角色，说明是上一句话的续行
+                // 如果当前还没确定角色（剧本第一行就没写名字），默认给男
+                if (!currentImg) currentImg = roleImages['男'];
+                currentLines.push(line);
             }
         });
-        if(count > 0) document.querySelector('.main').scrollTop = 0;
-        else alert("未识别到有效对话。");
+
+        // 循环结束，结算最后一块
+        flush();
+
+        document.querySelector('.main').scrollTop = 0;
     }
 
     // === 字体处理 ===
@@ -586,18 +616,16 @@
             }); } catch(err) { console.error(err); }
     }
 
-    // === V20 核心：图片排版逻辑 ===
+    // === V30 图片排版逻辑：使用 Transform 代替 Margin ===
     window.toggleImgEdit = function(btn) {
         saveState();
         const row = btn.closest('.row');
         const wrapper = row.querySelector('.img-wrapper-inner');
         
-        // 如果已经是编辑状态，就关闭
         if(wrapper.classList.contains('editing')) {
             wrapper.classList.remove('editing');
             btn.classList.remove('active');
         } else {
-            // 清除其他编辑状态
             document.querySelectorAll('.img-wrapper-inner.editing').forEach(el => el.classList.remove('editing'));
             document.querySelectorAll('.tool-btn.active').forEach(el => el.classList.remove('active'));
             
@@ -609,44 +637,46 @@
     window.addTextToRow = function(btn) {
         saveState();
         const row = btn.closest('.row');
-        // 添加文字框到该行
         const div = document.createElement('div');
         div.className = 'text-box-container';
         div.style.fontFamily = GLOBAL_DEFAULT_FONT;
         div.style.top = "50%"; div.style.left = "50%";
         div.innerHTML = `<div class="text-del-btn">×</div><div class="blue-dot"></div>${createLineHtml("新增文字", 28)}`;
-        row.appendChild(div); // 挂在 row 下
+        row.appendChild(div);
         bindContainerEvents(div);
         bindLineEvents(div.querySelector('.text-line'));
         activateContainer(div);
     }
 
+    // 修改：绑定图片事件，改用 transform
     function bindImageEvents(container, wrapper, row) {
-        // 1. 拖动位置 (使用 margin)
+        // 1. 拖动位置 (使用 Transform, 解决右移压缩问题)
         wrapper.onmousedown = function(e) {
             if(!wrapper.classList.contains('editing')) return;
-            // 如果点的是手柄，不触发拖动
             if(e.target.classList.contains('resize-handle')) return;
             
             e.stopPropagation(); e.preventDefault();
             saveState();
 
             const startX = e.clientX, startY = e.clientY;
+            
+            // 解析当前的 transform 值 (matrix)
             const style = window.getComputedStyle(wrapper);
-            const startML = parseFloat(style.marginLeft) || 0;
-            const startMT = parseFloat(style.marginTop) || 0;
+            const matrix = new DOMMatrix(style.transform);
+            const startTX = matrix.m41; // Translate X
+            const startTY = matrix.m42; // Translate Y
 
             const onMove = ev => {
                 const dx = ev.clientX - startX;
                 const dy = ev.clientY - startY;
-                wrapper.style.marginLeft = (startML + dx) + 'px';
-                wrapper.style.marginTop = (startMT + dy) + 'px';
+                // 设置 translate
+                wrapper.style.transform = `translate(${startTX + dx}px, ${startTY + dy}px)`;
             };
             const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
             window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
         };
 
-        // 2. 缩放逻辑 (改变 width %)
+        // 2. 缩放逻辑 (改变 width %, 保持不变)
         const setupHandle = (className, type) => {
             const handle = wrapper.querySelector('.' + className);
             handle.onmousedown = function(e) {
@@ -660,14 +690,12 @@
                 const onMove = ev => {
                     const deltaX = ev.clientX - startX;
                     let change = 0;
-                    
-                    // 根据不同角，决定拖动方向对宽度的影响
-                    if(type === 'right') change = deltaX; // 往右拖变大
-                    else change = -deltaX; // 往左拖变大
+                    if(type === 'right') change = deltaX; 
+                    else change = -deltaX; 
                     
                     let newWidthPx = startWidth + change;
                     let newPercent = (newWidthPx / containerWidth) * 100;
-                    newPercent = Math.min(100, Math.max(5, newPercent)); // 5% - 100%
+                    newPercent = Math.min(100, Math.max(5, newPercent));
                     
                     wrapper.style.width = newPercent + '%';
                 };
@@ -683,12 +711,11 @@
     }
 
 
-    // === 核心逻辑 ===
-    function addRow(src, initialText = null, insertAfterNode = null) {
+    // === 核心逻辑修改：addRow 支持字符串或数组 ===
+    function addRow(src, initialTextOrArray = null, insertAfterNode = null) {
         const div = document.createElement('div');
         div.className = 'row';
 
-        // V20 工具栏：上 | 下 | + | 齿轮 | T | X
         div.innerHTML = `
             <div class="tools">
                 <button class="tool-btn" onclick="moveRow(this, -1)" title="上移">↑</button>
@@ -714,36 +741,49 @@
         if(insertAfterNode && insertAfterNode.nextSibling) canvas.insertBefore(div, insertAfterNode.nextSibling);
         else canvas.appendChild(div);
         
-        // 如果有初始文字（剧本模式），则添加文字框
-        if(initialText !== null) {
+        // 生成文字逻辑
+        if(initialTextOrArray !== null) {
              const txtDiv = document.createElement('div');
              txtDiv.className = 'text-box-container';
              txtDiv.style.fontFamily = GLOBAL_DEFAULT_FONT;
              txtDiv.style.top = "50%"; txtDiv.style.left = "50%";
-             txtDiv.innerHTML = `<div class="text-del-btn">×</div><div class="blue-dot"></div>${createLineHtml(initialText, 28)}`;
+             
+             let innerHTML = `<div class="text-del-btn">×</div><div class="blue-dot"></div>`;
+             
+             // 如果是数组（多行），则遍历生成多个 line
+             if (Array.isArray(initialTextOrArray)) {
+                 initialTextOrArray.forEach(txt => {
+                     innerHTML += createLineHtml(txt, 28);
+                 });
+             } else {
+                 // 兼容旧的单行调用
+                 innerHTML += createLineHtml(initialTextOrArray, 28);
+             }
+
+             txtDiv.innerHTML = innerHTML;
              div.appendChild(txtDiv);
+             
              bindContainerEvents(txtDiv);
-             bindLineEvents(txtDiv.querySelector('.text-line'));
+             // 必须给里面每一行都绑定事件
+             txtDiv.querySelectorAll('.text-line').forEach(line => bindLineEvents(line));
         }
 
-        // 绑定图片事件
         bindImageEvents(div.querySelector('.img-container'), div.querySelector('.img-wrapper-inner'), div);
         
-        if(initialText === null && !insertAfterNode) div.scrollIntoView({behavior:'smooth'});
+        // 自动滚动到底部
+        if(initialTextOrArray === null && !insertAfterNode) div.scrollIntoView({behavior:'smooth'});
     }
     
     window.deleteRow = function(btn) { saveState(); btn.closest('.row').remove(); }
     window.moveRow = function(btn, dir) { saveState(); const row = btn.closest('.row'); if(dir===-1 && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling); if(dir===1 && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row); }
 
     window.addFloatingText = function() {
-        // 这是一个“添加到最后一行”的快捷方式
         const canvas = document.getElementById('canvas');
         const rows = canvas.querySelectorAll('.row');
         if(rows.length === 0) { alert("请先添加图片"); return; }
         let targetRow = rows[rows.length - 1];
         if(currentContainer) { const parentRow = currentContainer.closest('.row'); if(parentRow) targetRow = parentRow; }
         
-        // 复用 addTextToRow 的逻辑，这里需要构造一个伪对象或者直接调逻辑
         const div = document.createElement('div');
         div.className = 'text-box-container';
         div.style.fontFamily = GLOBAL_DEFAULT_FONT; div.style.top = "50%"; div.style.left = "50%";
@@ -751,13 +791,15 @@
         targetRow.appendChild(div);
         bindContainerEvents(div); bindLineEvents(div.querySelector('.text-line')); activateContainer(div);
     }
-    function createLineHtml(text, size) { return `<div class="text-line"><span class="line-content" contenteditable="false" style="font-size: ${size}px;">${text}</span><div class="red-dot"></div></div>`; }
+    
+    function createLineHtml(text, size) { 
+        return `<div class="text-line"><span class="line-content" contenteditable="false" style="font-size: ${size}px;">${text}</span><div class="red-dot"></div></div>`; 
+    }
 
-    // === 文字框事件绑定 (保持原逻辑) ===
+    // === 文字框事件绑定 (基本保持不变) ===
     function bindContainerEvents(container) {
         const blueDot = container.querySelector('.blue-dot');
         const delBtn = container.querySelector('.text-del-btn'); 
-        let currentScale = 1;
         if(delBtn) { delBtn.onmousedown = e => e.stopPropagation(); delBtn.onclick = e => { e.stopPropagation(); saveState(); container.remove(); if(currentContainer === container) currentContainer = null; } }
         container.onmousedown = function(e) {
             if(e.target.classList.contains('blue-dot') || e.target.classList.contains('red-dot') || e.target.classList.contains('text-del-btn') || e.target.isContentEditable) return;
@@ -826,11 +868,14 @@
         tools.innerHTML = '.tools, .blue-dot, .red-dot, .text-del-btn, .row.waiting-insert::after, .resize-handle { display: none !important; } .row, .img-wrapper-inner { border: none !important; outline: none !important; }';
         document.head.appendChild(tools);
 
-        const originalMinHeight = canvasDiv.style.minHeight; canvasDiv.style.minHeight = "0px";
-        html2canvas(canvasDiv, { scale: 2, useCORS: true, height: canvasDiv.scrollHeight, windowHeight: canvasDiv.scrollHeight, scrollY: 0, backgroundColor: '#ffffff' }).then(cvs => {
+        // 获取真实高度而不是设定的 min-height
+        const originalHeight = canvasDiv.style.height;
+        canvasDiv.style.height = "auto";
+        
+        html2canvas(canvasDiv, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(cvs => {
             const a = document.createElement('a'); a.download = '排版长图_' + Date.now() + '.jpg'; a.href = cvs.toDataURL('image/jpeg', 0.9); a.click();
-            btn.innerText = "保存长图"; tools.remove(); canvasDiv.style.minHeight = originalMinHeight;
-        }).catch(() => { alert("保存失败"); btn.innerText = "保存长图"; tools.remove(); canvasDiv.style.minHeight = originalMinHeight; });
+            btn.innerText = "保存长图"; tools.remove(); canvasDiv.style.height = originalHeight;
+        }).catch(() => { alert("保存失败"); btn.innerText = "保存长图"; tools.remove(); canvasDiv.style.height = originalHeight; });
     };
 
     initDB();
