@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简笔笑画制作器 - V30 终极排版版</title>
+    <title>简笔笑画制作器 - V31 体验优化版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #07c160; --warning: #ff9c00; --gray: #f2f2f2; --blue: #1890ff; --dark: #333; }
@@ -58,7 +58,6 @@
         .main { flex: 1; background: var(--gray); display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: 40px; position: relative; }
         #canvas { 
             background: white; width: 100%; max-width: 600px; 
-            /* 修改1：去掉 min-height，由内容自动撑开，解决底部留白问题 */
             height: fit-content; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
             position: relative;
@@ -88,22 +87,19 @@
         }
         .tool-btn:hover { background: rgba(255,255,255,0.3); }
         .tool-btn.del:hover { background: #fa5151; }
-        
-        /* 特殊按钮颜色 */
         .tool-btn.btn-plus { color: #52c41a; font-size: 20px; }
         .tool-btn.btn-gear { color: #1890ff; font-size: 16px; }
         .tool-btn.btn-text { color: #faad14; font-size: 14px; font-weight: 800; font-family: serif; }
         .tool-btn.active { background: #1890ff; color: white; }
 
-
-        /* === 图片容器核心 (解决右移压缩问题) === */
+        /* 图片容器核心 */
         .img-container {
             width: 100%;
             position: relative;
             display: flex;
             justify-content: center; 
             align-items: center;
-            overflow: hidden; /* 默认隐藏超出部分，如果想要超出可见，去掉这行 */
+            overflow: hidden; 
         }
         
         .img-wrapper-inner {
@@ -111,18 +107,12 @@
             display: inline-block;
             line-height: 0;
             width: 100%; 
-            /* 修改3：不再使用 margin 来移动，改用 transform，且防止压缩 */
             transform-origin: center center;
-            flex-shrink: 0; /* 禁止被压缩 */
+            flex-shrink: 0; 
             transition: box-shadow 0.2s;
         }
         
-        .img-layer {
-            width: 100%; 
-            height: auto;
-            pointer-events: none;
-            display: block;
-        }
+        .img-layer { width: 100%; height: auto; pointer-events: none; display: block; }
 
         .img-wrapper-inner.editing {
             outline: 2px solid var(--blue);
@@ -132,7 +122,6 @@
         }
         .img-wrapper-inner.editing .img-layer { pointer-events: none; }
         
-        /* 四角手柄 */
         .resize-handle {
             position: absolute; width: 14px; height: 14px;
             background: #07c160; border: 2px solid white; border-radius: 50%;
@@ -145,7 +134,6 @@
         .rh-bl { bottom: -7px; left: -7px; cursor: nesw-resize; }
         .rh-br { bottom: -7px; right: -7px; cursor: nwse-resize; }
 
-
         /* 文字框样式 */
         .text-box-container {
             position: absolute; top: 50%; left: 50%; 
@@ -157,7 +145,6 @@
             border: 1px dashed transparent;
             line-height: 1.2; 
             border-radius: 4px;
-            /* 允许容器宽度自适应内容 */
             width: max-content;
             max-width: 90%;
         }
@@ -181,26 +168,47 @@
         .text-del-btn:hover { background: red; transform: scale(1.1); }
         .text-box-container.active .text-del-btn { display: block; }
         
+        /* === 修复重点 1：文字行样式 === */
+        /* 增加了 padding-right: 20px 作为缓冲区，防止鼠标移出文字时红点立即消失 */
         .text-line {
             position: relative; 
             white-space: nowrap; 
-            margin: 0; padding: 0 4px; min-height: 20px;
+            margin: 0; 
+            padding: 0 20px 0 4px; /* 右侧增加缓冲区 */
+            min-height: 20px;
             border: 1px solid transparent; 
             display: block; 
             width: fit-content;
-            /* 居中每行文字 */
             margin-left: auto; margin-right: auto;
         }
         .text-line:hover { border-color: rgba(0,0,0,0.1); }
         .line-content { display: inline-block; outline: none; user-select: text; cursor: text; }
         
-        /* 每一行独立的红色调整点 */
+        /* === 修复重点 2：红点样式 === */
         .red-dot {
-            position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
-            width: 10px; height: 10px; border-radius: 50%;
-            background: #ff4d4f; border: 1px solid white;
-            cursor: ew-resize; display: none; z-index: 70; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            position: absolute; 
+            top: 50%; 
+            right: 4px; /* 调整位置在缓冲区内 */
+            transform: translateY(-50%);
+            width: 12px; height: 12px; /* 稍微加大 */
+            border-radius: 50%;
+            background: #ff4d4f; 
+            border: 2px solid white; /* 增加白边，更显眼 */
+            cursor: ew-resize; 
+            display: none; 
+            z-index: 70; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
+        /* 增加透明点击热区，让红点更好点中 */
+        .red-dot::after {
+            content: '';
+            position: absolute;
+            top: -10px; bottom: -10px;
+            left: -10px; right: -10px;
+            background: transparent;
+            border-radius: 50%;
+        }
+
         .text-line:hover .red-dot { display: block; }
 
         #dbStatus { font-size: 12px; color: #999; text-align: center; margin-top: 5px; }
@@ -306,7 +314,6 @@
 
 <div class="main">
     <div id="canvas"></div>
-    <!-- 底部留白已移除，canvas 高度自适应 -->
 </div>
 
 <script>
@@ -390,7 +397,7 @@
     });
 
     // === 数据库初始化 ===
-    const DB_NAME = "WeChatToolDB_V30"; // 升级版本号以防冲突
+    const DB_NAME = "WeChatToolDB_V30"; // 保持版本号一致，使用已有的图片
     let db = null;
     function initDB() {
         try {
@@ -529,7 +536,7 @@
         }
     }
 
-    // === 剧本生成 (核心修改：支持多行合并到一个框，但行独立) ===
+    // === 剧本生成 ===
     window.generateFromScript = function() {
         if(!roleImages['男'] || !roleImages['女']) {
             alert("请先设置男主和女主的图片！");
@@ -541,13 +548,11 @@
 
         const lines = text.split('\n');
         
-        // 缓冲器
         let currentImg = null;
-        let currentLines = []; // 存放当前块的文字行数组
+        let currentLines = []; 
 
         function flush() {
             if (currentImg && currentLines.length > 0) {
-                // 将多行文字作为一个数组传给 addRow
                 addRow(currentImg, currentLines); 
                 currentLines = [];
             }
@@ -557,7 +562,6 @@
             line = line.trim();
             if(!line) return;
 
-            // 检测是否是新角色的开始
             let isRoleStart = false;
             let nextImg = null;
             let content = "";
@@ -573,22 +577,16 @@
             }
 
             if (isRoleStart) {
-                // 如果是新角色，先结算上一个角色的内容
                 flush();
-                // 开始新角色
                 currentImg = nextImg;
                 if (content) currentLines.push(content);
             } else {
-                // 不是新角色，说明是上一句话的续行
-                // 如果当前还没确定角色（剧本第一行就没写名字），默认给男
                 if (!currentImg) currentImg = roleImages['男'];
                 currentLines.push(line);
             }
         });
 
-        // 循环结束，结算最后一块
         flush();
-
         document.querySelector('.main').scrollTop = 0;
     }
 
@@ -616,7 +614,7 @@
             }); } catch(err) { console.error(err); }
     }
 
-    // === V30 图片排版逻辑：使用 Transform 代替 Margin ===
+    // === 图片排版逻辑 ===
     window.toggleImgEdit = function(btn) {
         saveState();
         const row = btn.closest('.row');
@@ -648,35 +646,28 @@
         activateContainer(div);
     }
 
-    // 修改：绑定图片事件，改用 transform
     function bindImageEvents(container, wrapper, row) {
-        // 1. 拖动位置 (使用 Transform, 解决右移压缩问题)
         wrapper.onmousedown = function(e) {
             if(!wrapper.classList.contains('editing')) return;
             if(e.target.classList.contains('resize-handle')) return;
-            
             e.stopPropagation(); e.preventDefault();
             saveState();
 
             const startX = e.clientX, startY = e.clientY;
-            
-            // 解析当前的 transform 值 (matrix)
             const style = window.getComputedStyle(wrapper);
             const matrix = new DOMMatrix(style.transform);
-            const startTX = matrix.m41; // Translate X
-            const startTY = matrix.m42; // Translate Y
+            const startTX = matrix.m41; 
+            const startTY = matrix.m42; 
 
             const onMove = ev => {
                 const dx = ev.clientX - startX;
                 const dy = ev.clientY - startY;
-                // 设置 translate
                 wrapper.style.transform = `translate(${startTX + dx}px, ${startTY + dy}px)`;
             };
             const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
             window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
         };
 
-        // 2. 缩放逻辑 (改变 width %, 保持不变)
         const setupHandle = (className, type) => {
             const handle = wrapper.querySelector('.' + className);
             handle.onmousedown = function(e) {
@@ -710,8 +701,6 @@
         setupHandle('rh-tl', 'left');
     }
 
-
-    // === 核心逻辑修改：addRow 支持字符串或数组 ===
     function addRow(src, initialTextOrArray = null, insertAfterNode = null) {
         const div = document.createElement('div');
         div.className = 'row';
@@ -741,7 +730,6 @@
         if(insertAfterNode && insertAfterNode.nextSibling) canvas.insertBefore(div, insertAfterNode.nextSibling);
         else canvas.appendChild(div);
         
-        // 生成文字逻辑
         if(initialTextOrArray !== null) {
              const txtDiv = document.createElement('div');
              txtDiv.className = 'text-box-container';
@@ -750,27 +738,20 @@
              
              let innerHTML = `<div class="text-del-btn">×</div><div class="blue-dot"></div>`;
              
-             // 如果是数组（多行），则遍历生成多个 line
              if (Array.isArray(initialTextOrArray)) {
-                 initialTextOrArray.forEach(txt => {
-                     innerHTML += createLineHtml(txt, 28);
-                 });
+                 initialTextOrArray.forEach(txt => { innerHTML += createLineHtml(txt, 28); });
              } else {
-                 // 兼容旧的单行调用
                  innerHTML += createLineHtml(initialTextOrArray, 28);
              }
 
              txtDiv.innerHTML = innerHTML;
              div.appendChild(txtDiv);
-             
              bindContainerEvents(txtDiv);
-             // 必须给里面每一行都绑定事件
              txtDiv.querySelectorAll('.text-line').forEach(line => bindLineEvents(line));
         }
 
         bindImageEvents(div.querySelector('.img-container'), div.querySelector('.img-wrapper-inner'), div);
         
-        // 自动滚动到底部
         if(initialTextOrArray === null && !insertAfterNode) div.scrollIntoView({behavior:'smooth'});
     }
     
@@ -796,7 +777,7 @@
         return `<div class="text-line"><span class="line-content" contenteditable="false" style="font-size: ${size}px;">${text}</span><div class="red-dot"></div></div>`; 
     }
 
-    // === 文字框事件绑定 (基本保持不变) ===
+    // === 文字框事件绑定 ===
     function bindContainerEvents(container) {
         const blueDot = container.querySelector('.blue-dot');
         const delBtn = container.querySelector('.text-del-btn'); 
@@ -865,10 +846,10 @@
         document.querySelectorAll('.tool-btn.active').forEach(el => el.classList.remove('active'));
         
         const tools = document.createElement('style');
-        tools.innerHTML = '.tools, .blue-dot, .red-dot, .text-del-btn, .row.waiting-insert::after, .resize-handle { display: none !important; } .row, .img-wrapper-inner { border: none !important; outline: none !important; }';
+        // 保存时隐藏所有辅助元素，包括新增的缓冲区 padding
+        tools.innerHTML = '.tools, .blue-dot, .red-dot, .text-del-btn, .row.waiting-insert::after, .resize-handle { display: none !important; } .row, .img-wrapper-inner { border: none !important; outline: none !important; } .text-line { padding: 0 !important; }';
         document.head.appendChild(tools);
 
-        // 获取真实高度而不是设定的 min-height
         const originalHeight = canvasDiv.style.height;
         canvasDiv.style.height = "auto";
         
@@ -879,7 +860,6 @@
     };
 
     initDB();
-
 </script>
 </body>
 </html>
