@@ -26,7 +26,42 @@
             height: 100vh;
         }
 
-        /* 左侧笔记列表区域 - 宽度减少一半 */
+        /* 汉堡菜单按钮 - 修复点击区域 */
+        .hamburger-menu {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            padding: 0;
+            /* 确保整个按钮都是可点击的 */
+            overflow: hidden;
+        }
+
+        .hamburger-menu:hover {
+            background-color: #2980b9;
+        }
+
+        /* 确保图标居中且整个按钮可点击 */
+        .hamburger-menu i {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; /* 防止图标干扰点击事件 */
+        }
+
+        /* 左侧笔记列表区域 */
         .notes-sidebar {
             width: 25%;
             min-width: 200px;
@@ -37,12 +72,29 @@
             flex-direction: column;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             z-index: 2;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+
+        /* 折叠状态 */
+        .notes-sidebar.collapsed {
+            transform: translateX(-100%);
+            width: 0;
+            min-width: 0;
+            max-width: 0;
+            border-right: none;
         }
 
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid #e1e4e8;
             background-color: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header-content {
+            flex: 1;
         }
 
         .sidebar-header h1 {
@@ -54,6 +106,33 @@
         .sidebar-header p {
             color: #7f8c8d;
             font-size: 0.85rem;
+        }
+
+        /* 折叠按钮 - 同样修复点击区域 */
+        .collapse-btn {
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+            position: relative;
+        }
+
+        .collapse-btn i {
+            pointer-events: none; /* 防止图标干扰点击事件 */
+        }
+
+        .collapse-btn:hover {
+            background-color: rgba(0,0,0,0.05);
+            color: #2c3e50;
         }
 
         .notes-list {
@@ -125,6 +204,12 @@
             flex-direction: column;
             background-color: #fff;
             padding: 20px;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+
+        /* 当侧边栏折叠时，编辑区域填满整个宽度 */
+        .editor-area.full-width {
+            margin-left: 0;
         }
 
         .editor-header {
@@ -245,29 +330,6 @@
             background-color: #e74c3c;
         }
 
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-            
-            .notes-sidebar {
-                width: 100%;
-                max-width: 100%;
-                height: 35%;
-                border-right: none;
-                border-bottom: 1px solid #e1e4e8;
-            }
-            
-            .editor-area {
-                height: 65%;
-            }
-            
-            .note-item {
-                padding: 10px;
-            }
-        }
-
         /* 删除按钮样式 */
         .delete-note {
             position: absolute;
@@ -296,16 +358,93 @@
             opacity: 1 !important;
             background-color: rgba(231, 76, 60, 0.1);
         }
+
+        /* 响应式设计 - 当屏幕宽度小于等于900px时 */
+        @media (max-width: 900px) {
+            .hamburger-menu {
+                display: block; /* 改为block确保正确显示 */
+            }
+            
+            .notes-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 280px;
+                max-width: 280px;
+                box-shadow: 3px 0 15px rgba(0,0,0,0.1);
+            }
+            
+            .notes-sidebar:not(.collapsed) {
+                transform: translateX(0);
+            }
+            
+            .editor-area {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            /* 当侧边栏展开时，编辑区域向右移动 */
+            .notes-sidebar:not(.collapsed) + .editor-area {
+                margin-left: 280px;
+                width: calc(100% - 280px);
+            }
+        }
+
+        /* 更小屏幕的优化 */
+        @media (max-width: 600px) {
+            .notes-sidebar {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .notes-sidebar:not(.collapsed) + .editor-area {
+                margin-left: 100%;
+                width: 0;
+                overflow: hidden;
+            }
+            
+            .editor-area {
+                padding: 15px;
+            }
+            
+            .editor-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .button-group {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            /* 在小屏幕上调整汉堡按钮位置 */
+            .hamburger-menu {
+                top: 10px;
+                left: 10px;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- 汉堡菜单按钮 -->
+    <button class="hamburger-menu" id="hamburgerBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="container">
         <!-- 左侧笔记列表 -->
-        <div class="notes-sidebar">
+        <div class="notes-sidebar" id="notesSidebar">
             <div class="sidebar-header">
-                <h1><i class="fas fa-book"></i> 笔记</h1>
-                <p>点击笔记可重新编辑</p>
+                <div class="sidebar-header-content">
+                    <h1><i class="fas fa-book"></i> 笔记</h1>
+                    <p>点击笔记可重新编辑</p>
+                </div>
+                <button class="collapse-btn" id="collapseBtn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
             </div>
             <div class="notes-list" id="notesList">
                 <!-- 笔记列表将通过JavaScript动态生成 -->
@@ -317,7 +456,7 @@
         </div>
 
         <!-- 右侧编辑区域 -->
-        <div class="editor-area">
+        <div class="editor-area" id="editorArea">
             <div class="editor-header">
                 <h2 id="editorTitle">新建笔记</h2>
                 <div class="button-group">
@@ -356,17 +495,25 @@
             const lastSaved = document.getElementById('lastSaved');
             const editorTitle = document.getElementById('editorTitle');
             const statusDot = document.getElementById('statusDot');
+            const notesSidebar = document.getElementById('notesSidebar');
+            const collapseBtn = document.getElementById('collapseBtn');
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const editorArea = document.getElementById('editorArea');
             
             // 当前编辑的笔记状态
             let currentNoteId = null;
             let isNewNote = true;
             let isDirty = false;
+            let isCollapsed = false;
             
             // 从localStorage加载笔记或初始化空数组
             let notes = JSON.parse(localStorage.getItem('notes')) || [];
             
             // 初始化显示笔记列表
             renderNotesList();
+            
+            // 初始化侧边栏状态
+            checkScreenSize();
             
             // 事件监听
             saveButton.addEventListener('click', saveCurrentNote);
@@ -378,6 +525,84 @@
                 updateCharCount();
                 markAsDirty();
             });
+            
+            // 侧边栏折叠/展开功能
+            collapseBtn.addEventListener('click', toggleSidebar);
+            hamburgerBtn.addEventListener('click', toggleSidebar);
+            
+            // 点击编辑区域外的任何地方关闭侧边栏（在移动设备上）
+            document.addEventListener('click', function(event) {
+                const isMobile = window.innerWidth <= 900;
+                const isClickInsideSidebar = notesSidebar.contains(event.target);
+                const isClickOnHamburger = hamburgerBtn.contains(event.target);
+                
+                if (isMobile && !isCollapsed && !isClickInsideSidebar && !isClickOnHamburger) {
+                    collapseSidebar();
+                }
+            });
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', function() {
+                checkScreenSize();
+            });
+            
+            // 切换侧边栏状态
+            function toggleSidebar() {
+                console.log('汉堡按钮被点击了'); // 调试用
+                if (isCollapsed) {
+                    expandSidebar();
+                } else {
+                    collapseSidebar();
+                }
+            }
+            
+            // 折叠侧边栏
+            function collapseSidebar() {
+                notesSidebar.classList.add('collapsed');
+                editorArea.classList.add('full-width');
+                isCollapsed = true;
+                
+                // 更新按钮图标
+                collapseBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                hamburgerBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                
+                // 在小屏幕上隐藏汉堡按钮当侧边栏展开时
+                if (window.innerWidth <= 900) {
+                    hamburgerBtn.style.display = 'block';
+                }
+            }
+            
+            // 展开侧边栏
+            function expandSidebar() {
+                notesSidebar.classList.remove('collapsed');
+                editorArea.classList.remove('full-width');
+                isCollapsed = false;
+                
+                // 更新按钮图标
+                collapseBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                
+                // 在小屏幕上显示汉堡按钮
+                if (window.innerWidth <= 900) {
+                    hamburgerBtn.innerHTML = '<i class="fas fa-times"></i>';
+                }
+            }
+            
+            // 检查屏幕尺寸并调整侧边栏状态
+            function checkScreenSize() {
+                if (window.innerWidth <= 900) {
+                    // 小屏幕：默认折叠侧边栏
+                    hamburgerBtn.style.display = 'block';
+                    if (!isCollapsed) {
+                        collapseSidebar();
+                    }
+                } else {
+                    // 大屏幕：默认展开侧边栏
+                    hamburgerBtn.style.display = 'none';
+                    if (isCollapsed) {
+                        expandSidebar();
+                    }
+                }
+            }
             
             // 标记内容已更改
             function markAsDirty() {
@@ -433,6 +658,11 @@
                         
                         const noteId = this.getAttribute('data-id');
                         loadNoteForEdit(noteId);
+                        
+                        // 在移动设备上，点击笔记后自动折叠侧边栏
+                        if (window.innerWidth <= 900) {
+                            collapseSidebar();
+                        }
                     });
                 });
                 
@@ -627,6 +857,10 @@
                 if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                     e.preventDefault();
                     createNewNote();
+                }
+                // ESC键可以关闭侧边栏
+                if (e.key === 'Escape' && window.innerWidth <= 900 && !isCollapsed) {
+                    collapseSidebar();
                 }
             });
             
