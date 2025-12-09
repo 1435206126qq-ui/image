@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简笔笑画制作器 - V45 深度优化版</title>
+    <title>简笔笑画制作器 - V45 修复保存版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #07c160; --warning: #ff9c00; --gray: #f2f2f2; --blue: #1890ff; --dark: #333; --border: #ddd; }
@@ -919,23 +919,82 @@
         row.appendChild(d); bindContainerEvents(d); bindLineEvents(d.querySelector('.text-line')); currentTextContainer = d;
     }
     
+    // === V45 修复版保存逻辑：克隆+离屏渲染 (仅修改此处) ===
     window.saveLongImage = function() {
-        const btn = document.querySelector('button[onclick="saveLongImage()"]'); const txt = btn.innerText; btn.innerText = "处理中...";
-        const style = document.createElement('style');
-        style.innerHTML = `.tools, .resize-handle, .text-del-btn, .text-scale-handle, .crop-panel, .flip-btn { display: none !important; } .row, .img-wrapper-inner, .text-box-container { outline: none !important; border-bottom: none !important; }`;
-        document.head.appendChild(style);
-        html2canvas(document.getElementById('canvas'), { 
-            scale: 2, 
-            windowWidth: 1920, 
-            useCORS: true,
-            foreignObjectRendering: true 
+        const btn = document.querySelector('button[onclick="saveLongImage()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "处理中...";
+
+        // 1. 获取源节点
+        const sourceCanvas = document.getElementById('canvas');
+        if (!sourceCanvas || sourceCanvas.children.length === 0) {
+            alert("画布为空");
+            btn.innerText = originalText;
+            return;
+        }
+
+        // 2. 克隆节点 (关键步骤，为了完整展开内容且不受滚动条影响)
+        const clone = sourceCanvas.cloneNode(true);
+
+        // 3. 设置克隆节点样式：移出屏幕，固定宽度，高度自适应
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '-9999px';
+        clone.style.width = '800px'; 
+        clone.style.height = 'auto'; // 让内容撑开高度
+        clone.style.overflow = 'visible';
+        clone.style.zIndex = '-1';
+        clone.style.background = 'white'; 
+        clone.style.boxShadow = 'none';
+
+        // 4. 清理克隆节点中的 UI 工具 (删除按钮、调整手柄、虚线框等)
+        const selectorsToRemove = [
+            '.tools', 
+            '.crop-panel', 
+            '.resize-handle', 
+            '.flip-btn', 
+            '.text-del-btn', 
+            '.text-scale-handle'
+        ];
+        selectorsToRemove.forEach(sel => clone.querySelectorAll(sel).forEach(el => el.remove()));
+        
+        // 移除交互状态类名
+        clone.querySelectorAll('.active-row').forEach(el => el.classList.remove('active-row'));
+        clone.querySelectorAll('.editing').forEach(el => el.classList.remove('editing'));
+        clone.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+        clone.querySelectorAll('.show-crop').forEach(el => el.classList.remove('show-crop'));
+        
+        // 去除边框
+        clone.querySelectorAll('.row').forEach(el => el.style.borderBottom = 'none');
+        clone.querySelectorAll('.text-box-container').forEach(el => el.style.border = 'none');
+
+        // 插入到 body 以便渲染
+        document.body.appendChild(clone);
+
+        // 5. 使用 html2canvas 渲染
+        html2canvas(clone, { 
+            scale: 2, // 高清
+            useCORS: true, 
+            windowWidth: 1920,
+            width: 800,
+            height: clone.scrollHeight, // 确保截取完整高度
+            scrollY: 0,
+            scrollX: 0,
+            backgroundColor: "#ffffff"
         }).then(c => {
-            const a = document.createElement('a'); a.download = '长图.jpg'; a.href = c.toDataURL('image/jpeg', 0.9); a.click();
-            btn.innerText = txt; style.remove();
+            const a = document.createElement('a'); 
+            a.download = `简笔笑画_${Date.now()}.jpg`; 
+            a.href = c.toDataURL('image/jpeg', 0.9); 
+            a.click();
+            
+            // 清理
+            document.body.removeChild(clone);
+            btn.innerText = originalText;
         }).catch(error => {
             console.error("保存图片失败:", error);
-            alert("保存图片失败，请检查浏览器控制台了解详情。");
-            btn.innerText = txt; style.remove();
+            alert("保存失败，可能有跨域图片或内存不足。");
+            document.body.removeChild(clone);
+            btn.innerText = originalText;
         });
     }
     
