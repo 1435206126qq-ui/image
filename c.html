@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片合成编辑器 - 交互升级版</title>
+    <title>图片合成编辑器</title>
     <style>
         :root {
             --primary: #4b6cb7;
             --bg: #f5f7fa;
-            --sidebar-w: 260px; /* 加宽侧边栏 */
+            --sidebar-w: 260px;
+            --thumbnail-w: 180px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         
@@ -19,8 +20,8 @@
             overflow: hidden;
         }
         
-        /* === 左侧控制面板 === */
-        .sidebar {
+        /* ===== 第一栏：控制面板 ===== */
+        .control-sidebar {
             width: var(--sidebar-w);
             background: white;
             border-right: 1px solid #ddd;
@@ -30,7 +31,7 @@
             gap: 15px;
             overflow-y: auto;
             flex-shrink: 0;
-            z-index: 20; /* 提高层级，保证在预览图之上 */
+            z-index: 10;
             box-shadow: 2px 0 10px rgba(0,0,0,0.05);
         }
 
@@ -46,7 +47,6 @@
         }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { opacity: 0.9; }
-        .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
         
         /* 滑块样式 */
@@ -68,15 +68,157 @@
         }
         .mode-switch button.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: var(--primary); font-weight: bold;}
 
-        /* === 右侧主区域 === */
-        .main-area {
+        /* ===== 第二栏：缩略图列表 ===== */
+        .thumbnail-sidebar {
+            width: var(--thumbnail-w);
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .thumbnail-header {
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .thumbnail-header h4 {
+            font-size: 14px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .thumbnail-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        /* 缩略图项 */
+        .thumbnail-item {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .thumbnail-item.selected {
+            border-color: var(--primary);
+            background: #eef4ff;
+            box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.3);
+        }
+        
+        .thumbnail-item.dragging {
+            opacity: 0.7;
+            transform: scale(0.98);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .thumbnail-img {
+            width: 100%;
+            height: 100px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .thumbnail-img img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .thumbnail-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        
+        .thumbnail-name {
+            color: #333;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        
+        .thumbnail-index {
+            background: var(--primary);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        
+        .thumbnail-item.selected .thumbnail-index {
+            background: #ff9900;
+        }
+        
+        .thumbnail-del {
+            color: #999;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 5px;
+            flex-shrink: 0;
+        }
+        
+        .thumbnail-del:hover {
+            color: red;
+        }
+        
+        /* 拖拽提示 */
+        .drag-hint {
+            height: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+            margin: 2px 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .drag-hint.active {
+            opacity: 1;
+        }
+        
+        /* 空状态 */
+        .empty-thumbnails {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 13px;
+        }
+        
+        /* ===== 第三栏：预览区域 ===== */
+        .preview-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            position: relative; /* 关键：作为预览层的定位父级 */
             background: #f0f2f5;
+            overflow: hidden;
         }
-
+        
         .preview-header {
             padding: 15px 20px;
             background: white;
@@ -84,92 +226,163 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 5;
         }
-
-        .workspace {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
+        
+        .preview-header h4 {
+            font-size: 16px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .preview-tools {
             display: flex;
-            flex-direction: column;
+            gap: 10px;
             align-items: center;
         }
-
-        /* 图片列表网格 */
-        .img-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
+        
+        .preview-content {
+            flex: 1;
+            overflow: hidden; /* 改为hidden，内部滚动 */
+            position: relative; /* 为canvas定位做准备 */
+        }
+        
+        /* 预览画布容器 */
+        .preview-container {
+            position: relative;
             width: 100%;
-            max-width: 1000px;
-        }
-
-        .img-card {
+            height: 100%;
+            overflow: hidden;
             background: white;
-            border-radius: 8px;
-            padding: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: 0.2s;
         }
-        .img-card.selected { border-color: var(--primary); background: #eef4ff; box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.3); }
-        .img-thumb-box {
-            height: 120px; background: #eee; border-radius: 4px;
-            overflow: hidden; display: flex; align-items: center; justify-content: center;
-        }
-        .img-thumb-box img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none;}
-        .img-info { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-        .del-btn { color: #999; cursor: pointer; font-size: 16px; }
-        .del-btn:hover { color: red; }
-
-        /* === 预览覆盖层 (修改为绝对定位覆盖MainArea) === */
-        .preview-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #2c3e50; /* 深色背景以便看清边界 */
-            z-index: 10; /* 高于列表，但低于 Sidebar(20) */
-            display: none;
-            overflow: hidden; /* 内部 canvas 自己动 */
-            cursor: grab;
-        }
-        .preview-overlay.active { display: flex; align-items: center; justify-content: center; }
         
+        /* 关键：canvas包装器用于缩放和拖拽 */
         .canvas-wrapper {
-            transform-origin: center center;
-            transition: transform 0.1s ease-out; /* 平滑缩放 */
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab; /* 默认手形光标 */
+            user-select: none;
+            touch-action: none; /* 防止触摸默认行为 */
         }
         
-        canvas { display: block; }
-
-        /* 提示条 */
-        .overlay-tips {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); color: white;
-            padding: 5px 15px; border-radius: 20px; font-size: 12px;
+        .canvas-wrapper.dragging {
+            cursor: grabbing; /* 拖拽时的手形 */
+        }
+        
+        canvas {
+            display: block;
+            position: absolute;
+            transform-origin: 0 0; /* 缩放原点 */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            max-width: none; /* 移除最大宽度限制 */
+        }
+        
+        /* 缩放控制 */
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .zoom-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .zoom-level {
+            font-size: 12px;
+            color: #333;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        /* 文件上传区域 */
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #f8f9fa;
+        }
+        
+        .upload-icon {
+            font-size: 40px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .upload-hint {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 缩放提示 */
+        .zoom-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
             pointer-events: none;
-            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-        .close-preview-btn {
-            position: absolute; top: 10px; right: 20px;
-            background: rgba(0,0,0,0.5); color: white; border: none;
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-            font-size: 20px; z-index: 15;
+        
+        .zoom-hint.show {
+            opacity: 1;
         }
-        .close-preview-btn:hover { background: red; }
 
     </style>
 </head>
 <body>
 
-    <!-- 左侧控制栏 (z-index: 20) -->
-    <div class="sidebar">
-        <h2 style="font-size: 18px; color: #333; margin-bottom: 10px;">图片合成</h2>
+    <!-- 第一栏：控制面板 -->
+    <div class="control-sidebar">
+        <h2 style="font-size: 18px; color: #333; margin-bottom: 10px;">图片合成设置</h2>
         
         <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
-        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">+ 添加图片</button>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">点击或拖拽添加图片</div>
+            <div class="upload-hint">支持 JPG、PNG 格式</div>
+        </div>
         
         <div class="control-group">
             <span class="label">裁剪模式</span>
@@ -177,11 +390,13 @@
                 <button class="active" data-mode="single" onclick="setMode('single')">选中微调</button>
                 <button data-mode="global" onclick="setMode('global')">全局统一</button>
             </div>
-            <div style="margin-top: 8px; font-size: 12px; color: #666; min-height: 16px;" id="selectedInfo">请添加并选中图片</div>
+            <div style="margin-top: 8px; font-size: 12px; color: #666; min-height: 16px;" id="selectedInfo">
+                请添加并选中图片
+            </div>
         </div>
 
         <div class="control-group">
-            <span class="label">裁剪 (0-300px)</span>
+            <span class="label">裁剪设置 (0-300px)</span>
             
             <div class="slider-row">
                 <span class="slider-label">上</span>
@@ -210,61 +425,83 @@
             <input type="range" style="width:100%" min="0" max="100" value="0" id="spacingSlider" oninput="updateSpacing(this.value)">
             <div style="display:flex; justify-content:space-between; margin-top:5px;">
                 <span style="font-size:12px" id="spacingVal">0px</span>
-                <input type="color" value="#ffffff" style="height:20px; width:40px; border:none;" id="spacingColor" oninput="if(isPreviewMode) renderPreview()">
+                <input type="color" value="#ffffff" style="height:20px; width:40px; border:none;" id="spacingColor" oninput="renderPreview()">
             </div>
         </div>
 
-        <button class="btn btn-success" onclick="togglePreview()">预览合成效果</button>
-        <button class="btn btn-danger" onclick="clearAll()">清空所有</button>
+        <button class="btn btn-danger" onclick="clearAll()">清空所有图片</button>
         
         <div style="margin-top: auto; padding-top:10px; border-top:1px solid #eee;">
-             <button class="btn btn-primary" onclick="downloadImage()">下载长图</button>
+            <button class="btn btn-primary" onclick="downloadImage()">下载合成图片</button>
         </div>
     </div>
 
-    <!-- 右侧主区域 -->
-    <div class="main-area">
-        <div class="preview-header">
-            <h4>工作区</h4>
-            <span style="font-size: 12px; color: #666;">共 <span id="imgCount">0</span> 张</span>
+    <!-- 第二栏：缩略图列表 -->
+    <div class="thumbnail-sidebar">
+        <div class="thumbnail-header">
+            <h4>图片列表 (<span id="imgCount">0</span>)</h4>
         </div>
         
-        <!-- 图片列表 -->
-        <div class="workspace" id="imgList">
-            <div style="color:#999; margin-top: 50px;">请从左侧添加图片</div>
+        <div class="thumbnail-list" id="thumbnailList">
+            <div class="empty-thumbnails">请从左侧添加图片</div>
         </div>
+    </div>
 
-        <!-- 预览覆盖层 (z-index: 10) -->
-        <div class="preview-overlay" id="previewOverlay">
-            <div class="overlay-tips">滚轮缩放 • 拖拽移动 • 点击背景退出</div>
-            <button class="close-preview-btn" onclick="closePreview()">&times;</button>
-            <div class="canvas-wrapper" id="canvasWrapper">
-                <canvas id="previewCanvas"></canvas>
+    <!-- 第三栏：预览区域 -->
+    <div class="preview-area">
+        <div class="preview-header">
+            <h4>预览区域 (滚轮缩放，左键拖拽)</h4>
+            <div class="preview-tools">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="changeZoom(-0.1)">-</button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" onclick="changeZoom(0.1)">+</button>
+                    <button class="zoom-btn" onclick="resetView()" style="font-size:12px;">重置</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-content" id="previewContent">
+            <div class="preview-container">
+                <!-- Canvas包装器，用于处理交互 -->
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 缩放提示 -->
+    <div class="zoom-hint" id="zoomHint">滚轮缩放，左键拖拽</div>
+
     <script>
-        // --- 全局状态 ---
+        // ========== 全局变量 ==========
         let images = []; 
         let globalCrop = { top: 0, bottom: 0, left: 0, right: 0 };
         let currentMode = 'single'; 
         let selectedIndex = -1;
         let spacing = 0;
-        let isPreviewMode = false;
-
-        // 预览视图状态
-        let viewState = { scale: 0.8, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-
+        
+        // 新增：缩放和拖拽相关变量
+        let zoomLevel = 1.0;
+        let viewportOffset = { x: 0, y: 0 };
+        let isDragging = false;
+        let lastMousePos = { x: 0, y: 0 };
+        let canvasSize = { width: 0, height: 0 }; // canvas原始尺寸
+        let transformMatrix = { x: 0, y: 0, scale: 1 }; // 当前变换
+        
+        // DOM元素
         const fileInput = document.getElementById('fileInput');
-        const imgListDom = document.getElementById('imgList');
-        const previewOverlay = document.getElementById('previewOverlay');
-        const canvasWrapper = document.getElementById('canvasWrapper');
+        const thumbnailList = document.getElementById('thumbnailList');
         const previewCanvas = document.getElementById('previewCanvas');
+        const previewContent = document.getElementById('previewContent');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const zoomHint = document.getElementById('zoomHint');
 
-        // --- 事件监听 ---
+        // ========== 文件上传处理 ==========
         fileInput.addEventListener('change', async (e) => {
             if (e.target.files.length === 0) return;
+            
             const newFiles = Array.from(e.target.files);
             const loadPromises = newFiles.map(file => {
                 return new Promise((resolve) => {
@@ -280,73 +517,188 @@
                     };
                 });
             });
+            
             const newImages = await Promise.all(loadPromises);
             images = [...images, ...newImages];
-            renderList();
+            
             // 默认选中第一张
-            if (images.length > 0 && selectedIndex === -1) selectImage(0);
-            // 如果正在预览，刷新预览
-            if (isPreviewMode) renderPreview();
+            if (images.length > 0 && selectedIndex === -1) {
+                selectImage(0);
+            }
+            
+            renderThumbnails();
+            renderPreview();
+            
             fileInput.value = '';
         });
+        
+        // 拖拽上传支持
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = '#f0f7ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
 
-        // --- 渲染列表 ---
-        function renderList() {
-            document.getElementById('imgCount').textContent = images.length;
-            if (images.length === 0) {
-                imgListDom.innerHTML = '<div style="color:#999; margin-top: 50px;">请添加图片</div>';
+        // ========== 缩略图列表渲染 ==========
+        function renderThumbnails() {
+            const imgCount = images.length;
+            document.getElementById('imgCount').textContent = imgCount;
+            
+            if (imgCount === 0) {
+                thumbnailList.innerHTML = '<div class="empty-thumbnails">请从左侧添加图片</div>';
                 return;
             }
-
-            imgListDom.innerHTML = '';
-            const grid = document.createElement('div');
-            grid.className = 'img-grid';
-
+            
+            thumbnailList.innerHTML = '';
+            
             images.forEach((item, index) => {
-                const card = document.createElement('div');
-                card.className = `img-card ${index === selectedIndex ? 'selected' : ''}`;
-                card.draggable = true;
+                // 创建拖拽提示线
+                if (index > 0) {
+                    const hint = document.createElement('div');
+                    hint.className = 'drag-hint';
+                    hint.dataset.position = index;
+                    thumbnailList.appendChild(hint);
+                }
                 
-                // 拖拽排序逻辑
-                card.ondragstart = (e) => { e.dataTransfer.setData('idx', index); card.style.opacity = '0.5'; };
-                card.ondragend = () => { card.style.opacity = '1'; };
-                card.ondragover = (e) => e.preventDefault();
-                card.ondrop = (e) => {
+                // 创建缩略图项
+                const itemEl = document.createElement('div');
+                itemEl.className = `thumbnail-item ${index === selectedIndex ? 'selected' : ''}`;
+                itemEl.draggable = true;
+                itemEl.dataset.index = index;
+                
+                // 拖拽事件
+                itemEl.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', index);
+                    itemEl.classList.add('dragging');
+                    
+                    // 显示所有提示线
+                    document.querySelectorAll('.drag-hint').forEach(hint => {
+                        hint.classList.add('active');
+                    });
+                });
+                
+                itemEl.addEventListener('dragend', () => {
+                    itemEl.classList.remove('dragging');
+                    // 隐藏所有提示线
+                    document.querySelectorAll('.drag-hint').forEach(hint => {
+                        hint.classList.remove('active');
+                    });
+                });
+                
+                itemEl.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    const fromIdx = parseInt(e.dataTransfer.getData('idx'));
-                    moveImage(fromIdx, index);
-                };
-
+                });
+                
+                itemEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const toIndex = index;
+                    
+                    if (fromIndex !== toIndex) {
+                        moveImage(fromIndex, toIndex);
+                    }
+                });
+                
                 // 点击选中
-                card.onclick = (e) => {
-                    if (e.target.className.includes('del-btn')) return;
-                    selectImage(index);
-                };
-
-                card.innerHTML = `
-                    <div class="img-thumb-box">
-                        <img src="${item.imgObj.src}">
+                itemEl.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('thumbnail-del')) {
+                        selectImage(index);
+                    }
+                });
+                
+                // 计算裁剪后的缩略图
+                const c = item.crop;
+                const t = c.top + globalCrop.top;
+                const b = c.bottom + globalCrop.bottom;
+                const l = c.left + globalCrop.left;
+                const r = c.right + globalCrop.right;
+                
+                const sw = Math.max(1, item.imgObj.width - l - r);
+                const sh = Math.max(1, item.imgObj.height - t - b);
+                
+                // 创建临时canvas绘制裁剪后的缩略图
+                const thumbCanvas = document.createElement('canvas');
+                const thumbCtx = thumbCanvas.getContext('2d');
+                thumbCanvas.width = 140;
+                thumbCanvas.height = 90;
+                
+                // 计算缩略图绘制参数
+                const scale = Math.min(thumbCanvas.width / sw, thumbCanvas.height / sh) * 0.8;
+                const drawWidth = sw * scale;
+                const drawHeight = sh * scale;
+                const offsetX = (thumbCanvas.width - drawWidth) / 2;
+                const offsetY = (thumbCanvas.height - drawHeight) / 2;
+                
+                // 绘制裁剪后的图片
+                thumbCtx.fillStyle = '#f5f5f5';
+                thumbCtx.fillRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+                thumbCtx.drawImage(
+                    item.imgObj,
+                    l, t, sw, sh,
+                    offsetX, offsetY, drawWidth, drawHeight
+                );
+                
+                // 添加裁剪边框提示
+                if (t > 0 || b > 0 || l > 0 || r > 0) {
+                    thumbCtx.strokeStyle = 'rgba(255, 153, 0, 0.6)';
+                    thumbCtx.lineWidth = 2;
+                    thumbCtx.strokeRect(offsetX, offsetY, drawWidth, drawHeight);
+                }
+                
+                const thumbDataUrl = thumbCanvas.toDataURL();
+                
+                itemEl.innerHTML = `
+                    <div class="thumbnail-img">
+                        <img src="${thumbDataUrl}" alt="${item.name}">
                     </div>
-                    <div class="img-info">
-                        <span>${index + 1}. ${item.name.slice(0, 6)}...</span>
-                        <span class="del-btn" onclick="removeImage(${index})">&times;</span>
+                    <div class="thumbnail-info">
+                        <div class="thumbnail-index">${index + 1}</div>
+                        <div class="thumbnail-name">${item.name.length > 15 ? item.name.substring(0, 12) + '...' : item.name}</div>
+                        <div class="thumbnail-del" onclick="removeImage(${index})">&times;</div>
                     </div>
                 `;
-                grid.appendChild(card);
+                
+                thumbnailList.appendChild(itemEl);
             });
-            imgListDom.appendChild(grid);
         }
 
-        // --- 逻辑控制 ---
+        // ========== 图片选择 ==========
         function selectImage(index) {
+            if (index < 0 || index >= images.length) return;
+            
             selectedIndex = index;
-            renderList(); 
+            renderThumbnails();
+            
             if (currentMode === 'single') {
                 updateInputs(images[index].crop);
                 document.getElementById('selectedInfo').textContent = `当前调整: ${images[index].name}`;
             }
+            
+            // 确保选中的缩略图在可视区域内
+            const selectedItem = thumbnailList.querySelector(`.thumbnail-item[data-index="${index}"]`);
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
+        // ========== 模式设置 ==========
         function setMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.mode-switch button').forEach(b => {
@@ -357,13 +709,17 @@
                 updateInputs(globalCrop);
                 document.getElementById('selectedInfo').textContent = "模式: 全局统一调整 (所有图片生效)";
                 selectedIndex = -1;
-                renderList();
+                renderThumbnails();
             } else {
-                if (images.length > 0) selectImage(0);
-                else document.getElementById('selectedInfo').textContent = "请添加并选中图片";
+                if (images.length > 0) {
+                    selectImage(0);
+                } else {
+                    document.getElementById('selectedInfo').textContent = "请添加并选中图片";
+                }
             }
         }
 
+        // ========== 输入控件更新 ==========
         function updateInputs(cropObj) {
             ['Top','Bottom','Left','Right'].forEach(side => {
                 const key = side.toLowerCase();
@@ -384,176 +740,438 @@
                 images[selectedIndex].crop[side] = val;
             }
             
-            // 关键：如果预览层打开，实时重绘
-            if (isPreviewMode) {
-                requestAnimationFrame(renderPreview);
-            }
+            // 实时更新
+            renderThumbnails();
+            renderPreview();
         }
 
         function updateSpacing(val) {
             spacing = parseInt(val);
             document.getElementById('spacingVal').textContent = val + 'px';
-            if (isPreviewMode) requestAnimationFrame(renderPreview);
+            renderPreview();
         }
 
+        // ========== 图片管理 ==========
         function moveImage(from, to) {
+            if (from === to) return;
+            
             const item = images.splice(from, 1)[0];
             images.splice(to, 0, item);
-            if (selectedIndex === from) selectedIndex = to;
-            renderList();
-            if (isPreviewMode) renderPreview();
+            
+            if (selectedIndex === from) {
+                selectedIndex = to;
+            } else if (selectedIndex > from && selectedIndex <= to) {
+                selectedIndex--;
+            } else if (selectedIndex < from && selectedIndex >= to) {
+                selectedIndex++;
+            }
+            
+            renderThumbnails();
+            renderPreview();
         }
 
         function removeImage(index) {
+            if (!confirm(`确定要删除第${index + 1}张图片吗？`)) return;
+            
             images.splice(index, 1);
-            if (selectedIndex === index) selectedIndex = -1;
-            renderList();
-            if (isPreviewMode) renderPreview();
+            
+            if (selectedIndex === index) {
+                selectedIndex = -1;
+                if (images.length > 0) {
+                    selectImage(0);
+                }
+            } else if (selectedIndex > index) {
+                selectedIndex--;
+            }
+            
+            renderThumbnails();
+            renderPreview();
         }
 
         function clearAll() {
+            // 直接清空，不需要确认
             images = [];
             globalCrop = { top: 0, bottom: 0, left: 0, right: 0 };
+            selectedIndex = -1;
             updateInputs(globalCrop);
-            renderList();
-            closePreview();
+            renderThumbnails();
+            renderPreview();
+            document.getElementById('selectedInfo').textContent = "请添加并选中图片";
+            resetView();
         }
 
-        // --- 预览功能 (核心升级) ---
-        
-        function togglePreview() {
-            if (!isPreviewMode) {
-                if(images.length === 0) return alert('请先添加图片');
-                isPreviewMode = true;
-                previewOverlay.classList.add('active');
-                // 重置视图位置
-                viewState.scale = 0.6; // 默认稍微缩小一点能看全貌
-                viewState.x = 0;
-                viewState.y = 0;
-                applyTransform();
-                renderPreview();
-            } else {
-                closePreview();
-            }
-        }
-
-        function closePreview() {
-            isPreviewMode = false;
-            previewOverlay.classList.remove('active');
-        }
-
-        // 点击背景关闭 (利用冒泡，如果点到 canvasWrapper 不关，点 overlay 关)
-        previewOverlay.addEventListener('mousedown', (e) => {
-            if (e.target === previewOverlay) {
-                closePreview();
-            }
-        });
-
-        // --- 画布绘制 (生成结果) ---
+        // ========== 预览渲染 ==========
         function renderPreview() {
-            if(images.length === 0) return;
+            if (images.length === 0) {
+                // 清空画布
+                previewCanvas.width = 800;
+                previewCanvas.height = 400;
+                canvasSize.width = 800;
+                canvasSize.height = 400;
+                
+                const ctx = previewCanvas.getContext('2d');
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('请添加图片开始合成', previewCanvas.width / 2, previewCanvas.height / 2);
+                
+                updateCanvasDisplay();
+                return;
+            }
             
-            // 1. 计算统一宽度和总高度
+            // 计算每张图片的位置和尺寸
             let maxWidth = 0;
-            const renderData = images.map(img => {
+            const renderData = images.map((img, idx) => {
                 const c = img.crop;
-                // 实际裁剪 = 单图裁剪 + 全局裁剪
                 const t = c.top + globalCrop.top;
                 const b = c.bottom + globalCrop.bottom;
                 const l = c.left + globalCrop.left;
                 const r = c.right + globalCrop.right;
 
-                // 确保不会裁成负数
                 const sw = Math.max(1, img.imgObj.width - l - r);
                 const sh = Math.max(1, img.imgObj.height - t - b);
                 
                 if (sw > maxWidth) maxWidth = sw;
 
-                return { ...img, sw, sh, sx: l, sy: t };
+                return { 
+                    ...img, 
+                    index: idx,
+                    sw: sw, 
+                    sh: sh, 
+                    sx: l, 
+                    sy: t 
+                };
             });
 
             let totalHeight = 0;
-            renderData.forEach(d => {
-                d.renderScale = maxWidth / d.sw; // 统一宽度后的缩放比
+            renderData.forEach((d) => {
+                d.renderScale = maxWidth / d.sw;
                 d.renderHeight = d.sh * d.renderScale;
                 totalHeight += d.renderHeight;
+                
+                if (d.index < renderData.length - 1) {
+                    totalHeight += spacing;
+                }
             });
             
-            totalHeight += (renderData.length - 1) * spacing;
-
-            // 2. 设置 Canvas
-            previewCanvas.width = maxWidth;
-            previewCanvas.height = totalHeight;
+            // 设置canvas的原始像素尺寸
+            canvasSize.width = maxWidth;
+            canvasSize.height = totalHeight;
+            previewCanvas.width = canvasSize.width;
+            previewCanvas.height = canvasSize.height;
+            
             const ctx = previewCanvas.getContext('2d');
-
-            // 填充背景
+            
+            // 清除画布
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            
+            // 绘制间距背景
             if (spacing > 0) {
                 ctx.fillStyle = document.getElementById('spacingColor').value;
-                ctx.fillRect(0, 0, maxWidth, totalHeight);
+                ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
             }
 
-            // 3. 绘制
+            // 绘制图片
             let currentY = 0;
-            renderData.forEach((d, i) => {
+            renderData.forEach((d) => {
+                const renderHeight = d.sh * d.renderScale;
+                
                 ctx.drawImage(
                     d.imgObj,
-                    d.sx, d.sy, d.sw, d.sh, // 源裁剪
-                    0, currentY, maxWidth, d.renderHeight // 目标绘制
+                    d.sx, d.sy, d.sw, d.sh,
+                    0, currentY, canvasSize.width, renderHeight
                 );
-                currentY += d.renderHeight + spacing;
+                currentY += renderHeight + spacing;
             });
+            
+            // 更新显示
+            updateCanvasDisplay();
         }
 
-        // --- 预览交互 (缩放/移动) ---
-        
-        // 应用变换
-        function applyTransform() {
-            canvasWrapper.style.transform = `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`;
+        // ========== 缩放和拖拽功能 ==========
+        function updateCanvasDisplay() {
+            // 更新canvas的CSS变换
+            previewCanvas.style.transform = `translate(${transformMatrix.x}px, ${transformMatrix.y}px) scale(${transformMatrix.scale})`;
+            
+            // 更新缩放显示
+            document.getElementById('zoomLevel').textContent = Math.round(transformMatrix.scale * 100) + '%';
         }
 
-        // 滚轮缩放
-        previewOverlay.addEventListener('wheel', (e) => {
+        // 滚轮缩放函数
+        function handleWheelZoom(e) {
             e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            viewState.scale *= delta;
+            
+            const rect = canvasWrapper.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // 计算鼠标在canvas上的相对位置
+            const canvasX = (mouseX - transformMatrix.x) / transformMatrix.scale;
+            const canvasY = (mouseY - transformMatrix.y) / transformMatrix.scale;
+            
+            // 缩放因子
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = transformMatrix.scale * zoomFactor;
+            
             // 限制缩放范围
-            viewState.scale = Math.max(0.1, Math.min(viewState.scale, 5));
-            applyTransform();
-        });
+            const minScale = 0.1;
+            const maxScale = 10;
+            if (newScale < minScale || newScale > maxScale) return;
+            
+            // 以鼠标位置为中心缩放
+            const newX = mouseX - canvasX * newScale;
+            const newY = mouseY - canvasY * newScale;
+            
+            transformMatrix.scale = newScale;
+            transformMatrix.x = newX;
+            transformMatrix.y = newY;
+            
+            updateCanvasDisplay();
+            
+            // 显示提示
+            showZoomHint(`缩放: ${Math.round(newScale * 100)}%`);
+        }
 
-        // 鼠标拖拽
-        previewOverlay.addEventListener('mousedown', (e) => {
-            // 允许在 overlay 或 canvas 上拖拽
-            viewState.isDragging = true;
-            viewState.startX = e.clientX - viewState.x;
-            viewState.startY = e.clientY - viewState.y;
-            previewOverlay.style.cursor = 'grabbing';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!viewState.isDragging) return;
+        // 鼠标拖拽函数
+        function startDrag(e) {
+            if (e.button !== 0) return; // 只响应左键
+            
+            isDragging = true;
+            lastMousePos.x = e.clientX;
+            lastMousePos.y = e.clientY;
+            
+            canvasWrapper.classList.add('dragging');
             e.preventDefault();
-            viewState.x = e.clientX - viewState.startX;
-            viewState.y = e.clientY - viewState.startY;
-            applyTransform();
-        });
+        }
 
-        window.addEventListener('mouseup', () => {
-            viewState.isDragging = false;
-            previewOverlay.style.cursor = 'grab';
-        });
+        function handleDrag(e) {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - lastMousePos.x;
+            const deltaY = e.clientY - lastMousePos.y;
+            
+            transformMatrix.x += deltaX;
+            transformMatrix.y += deltaY;
+            
+            lastMousePos.x = e.clientX;
+            lastMousePos.y = e.clientY;
+            
+            updateCanvasDisplay();
+        }
 
-        // --- 下载 ---
+        function stopDrag() {
+            isDragging = false;
+            canvasWrapper.classList.remove('dragging');
+        }
+
+        // 按钮缩放函数
+        function changeZoom(delta) {
+            const container = canvasWrapper.getBoundingClientRect();
+            const centerX = container.width / 2;
+            const centerY = container.height / 2;
+            
+            // 计算中心点在canvas上的相对位置
+            const canvasX = (centerX - transformMatrix.x) / transformMatrix.scale;
+            const canvasY = (centerY - transformMatrix.y) / transformMatrix.scale;
+            
+            const newScale = transformMatrix.scale + delta;
+            
+            // 限制缩放范围
+            const minScale = 0.1;
+            const maxScale = 10;
+            if (newScale < minScale || newScale > maxScale) return;
+            
+            // 以中心点缩放
+            const newX = centerX - canvasX * newScale;
+            const newY = centerY - canvasY * newScale;
+            
+            transformMatrix.scale = newScale;
+            transformMatrix.x = newX;
+            transformMatrix.y = newY;
+            
+            updateCanvasDisplay();
+        }
+
+        // 重置视图
+        function resetView() {
+            // 计算居中位置
+            const container = canvasWrapper.getBoundingClientRect();
+            const canvasWidth = canvasSize.width;
+            const canvasHeight = canvasSize.height;
+            
+            // 如果canvas尺寸为0，则不重置
+            if (canvasWidth === 0 || canvasHeight === 0) return;
+            
+            // 计算合适的缩放比例以适配容器
+            const scaleX = container.width / canvasWidth;
+            const scaleY = container.height / canvasHeight;
+            const newScale = Math.min(scaleX, scaleY) * 0.9; // 90%适配
+            
+            // 居中位置
+            const newX = (container.width - canvasWidth * newScale) / 2;
+            const newY = (container.height - canvasHeight * newScale) / 2;
+            
+            transformMatrix.scale = newScale;
+            transformMatrix.x = newX;
+            transformMatrix.y = newY;
+            
+            updateCanvasDisplay();
+            showZoomHint("视图已重置");
+        }
+
+        // 显示缩放提示
+        function showZoomHint(message) {
+            zoomHint.textContent = message;
+            zoomHint.classList.add('show');
+            
+            clearTimeout(zoomHint.timeout);
+            zoomHint.timeout = setTimeout(() => {
+                zoomHint.classList.remove('show');
+            }, 1500);
+        }
+
+        // ========== 事件监听器设置 ==========
+        function setupInteraction() {
+            // 滚轮缩放
+            canvasWrapper.addEventListener('wheel', handleWheelZoom, { passive: false });
+            
+            // 鼠标拖拽
+            canvasWrapper.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // 触摸屏支持
+            canvasWrapper.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    // 单指触摸模拟鼠标拖拽
+                    const touch = e.touches[0];
+                    startDrag({
+                        button: 0,
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        preventDefault: () => e.preventDefault()
+                    });
+                } else if (e.touches.length === 2) {
+                    // 双指缩放手势
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            canvasWrapper.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    const touch = e.touches[0];
+                    handleDrag({
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                }
+                // 双指缩放逻辑可以在这里添加
+            }, { passive: false });
+            
+            canvasWrapper.addEventListener('touchend', stopDrag);
+            canvasWrapper.addEventListener('touchcancel', stopDrag);
+        }
+
+        // ========== 下载功能 ==========
         function downloadImage() {
-            if(images.length === 0) return alert("无图片");
-            // 如果不在预览模式，先渲染一次确保数据最新
-            if (!isPreviewMode) renderPreview();
+            if (images.length === 0) {
+                alert("请先添加图片");
+                return;
+            }
+            
+            // 创建临时canvas用于下载（原始尺寸，100%缩放）
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // 重新计算尺寸（与renderPreview逻辑相同）
+            let maxWidth = 0;
+            const renderData = images.map((img) => {
+                const c = img.crop;
+                const t = c.top + globalCrop.top;
+                const b = c.bottom + globalCrop.bottom;
+                const l = c.left + globalCrop.left;
+                const r = c.right + globalCrop.right;
+
+                const sw = Math.max(1, img.imgObj.width - l - r);
+                const sh = Math.max(1, img.imgObj.height - t - b);
+                
+                if (sw > maxWidth) maxWidth = sw;
+
+                return { 
+                    imgObj: img.imgObj,
+                    sw: sw, 
+                    sh: sh, 
+                    sx: l, 
+                    sy: t 
+                };
+            });
+
+            let totalHeight = 0;
+            renderData.forEach((d) => {
+                const renderScale = maxWidth / d.sw;
+                const renderHeight = d.sh * renderScale;
+                totalHeight += renderHeight + spacing;
+            });
+            
+            if (renderData.length > 0) {
+                totalHeight -= spacing;
+            }
+            
+            tempCanvas.width = maxWidth;
+            tempCanvas.height = totalHeight;
+            
+            // 绘制间距背景
+            if (spacing > 0) {
+                tempCtx.fillStyle = document.getElementById('spacingColor').value;
+                tempCtx.fillRect(0, 0, maxWidth, totalHeight);
+            }
+
+            // 绘制图片
+            let currentY = 0;
+            renderData.forEach((d) => {
+                const renderScale = maxWidth / d.sw;
+                const renderHeight = d.sh * renderScale;
+                
+                tempCtx.drawImage(
+                    d.imgObj,
+                    d.sx, d.sy, d.sw, d.sh,
+                    0, currentY, maxWidth, renderHeight
+                );
+                currentY += renderHeight + spacing;
+            });
             
             const link = document.createElement('a');
-            link.download = `result_${Date.now()}.jpg`;
-            link.href = previewCanvas.toDataURL('image/jpeg', 0.9);
+            const filename = `合成图片_${Date.now()}.jpg`;
+            
+            link.download = filename;
+            link.href = tempCanvas.toDataURL('image/jpeg', 0.92);
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
+
+        // ========== 初始化 ==========
+        function init() {
+            // 设置交互事件
+            setupInteraction();
+            
+            // 初始渲染
+            renderPreview();
+            
+            // 初始重置视图
+            setTimeout(resetView, 100);
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+        
+        // 窗口大小变化时重新调整视图
+        window.addEventListener('resize', () => {
+            setTimeout(resetView, 100);
+        });
 
     </script>
 </body>
